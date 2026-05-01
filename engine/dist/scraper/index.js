@@ -1,168 +1,320 @@
 "use strict";
 // ==========================================
-// SCRAPER - MercadoPublico.cl - Version optimizada
-// Usa lista basica (1 llamada rapida) en vez de detalle por item (50 llamadas lentas)
-// Token: 8BBCAB7E-0911-4E40-BD68-C56A0A33FF78
+// SCRAPER - Extracción de datos crudos
+// Simula y consume fuentes de licitaciones
 // ==========================================
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testConnection = testConnection;
+exports.MOCK_DATABASE = void 0;
 exports.scrapeOpportunities = scrapeOpportunities;
 exports.registerSource = registerSource;
-const https = __importStar(require("https"));
-const TICKET = '8BBCAB7E-0911-4E40-BD68-C56A0A33FF78';
-const API_BASE = 'https://api.mercadopublico.cl/servicios/v1/publico';
-function httpGet(url, timeoutMs = 20000) {
-    return new Promise((resolve, reject) => {
-        const req = https.get(url, { headers: { 'User-Agent': 'AssetPark-Scraper/1.0' } }, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    resolve(JSON.parse(data));
-                }
-                catch (e) {
-                    reject(new Error('JSON invalido: ' + e.message));
-                }
-            });
-        });
-        req.on('error', reject);
-        req.setTimeout(timeoutMs, () => { req.destroy(); reject(new Error('Timeout HTTP ' + timeoutMs + 'ms')); });
-    });
-}
-function parseRegion(regionRaw) {
-    if (!regionRaw)
-        return 'No especificada';
-    return regionRaw
-        .replace(/^Region del?\s*/i, '')
-        .replace(/^de\s*/i, '')
-        .replace(/^Region de los\s*/i, '')
-        .replace(/^Region de la\s*/i, '')
-        .replace(/^Region de\s*/i, '')
-        .replace(/^Region\s*/i, '')
-        .trim();
-}
 /**
- * Mapea un item de la lista basica de MercadoPublico a RawOpportunity
- * La lista basica ya incluye: CodigoExterno, Nombre, Estado, CodigoEstado, FechaCierre,
- * Comprador.NombreOrganismo, Comprador.RegionUnidad, etc.
+ * Datos simulados de licitaciones reales (formato MercadoPublico.cl)
+ * En producción, esto se reemplaza por fetch real a la API del estado
  */
-function mapListItemToOpportunity(lic) {
-    const comprador = lic.Comprador || {};
-    const fechas = lic.Fechas || {};
-    const fechaPub = fechas.FechaPublicacion ? fechas.FechaPublicacion.split('T')[0] : '';
-    const fechaCierre = fechas.FechaCierre ? fechas.FechaCierre.split('T')[0] : (lic.FechaCierre || '');
-    const region = parseRegion(comprador.RegionUnidad);
-    const organismo = comprador.NombreOrganismo || comprador.NombreUnidad || 'Organismo no especificado';
-    return {
-        codigo: lic.CodigoExterno || '',
-        nombre: lic.Nombre || '',
-        organismo,
-        region,
-        monto: typeof lic.MontoEstimado === 'number' ? lic.MontoEstimado : 0,
-        fecha_publicacion: fechaPub,
-        fecha_cierre: fechaCierre,
-        estado: lic.Estado || (lic.CodigoEstado === 5 ? 'Publicada' : 'Cerrada'),
-        categoria: lic.Tipo || 'General',
-        url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/fichaLicitacion.html?idLicitacion=${encodeURIComponent(lic.CodigoExterno || '')}`,
-        descripcion: lic.Nombre || '',
+const MOCK_DATABASE = [
+    {
+        codigo: 'LIC-2024-001',
+        nombre: 'Construcción de Puente Peatonal en Avenida Principal',
+        organismo: 'Ministerio de Obras Públicas',
+        region: 'Metropolitana',
+        monto: 450000000,
+        fecha_publicacion: '2024-03-15',
+        fecha_cierre: '2024-04-15',
+        estado: 'Publicada',
+        categoria: 'Obras Públicas',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-001',
+        descripcion: 'Construcción de puente peatonal de hormigón armado con accesos universales',
         fuente: 'MercadoPublico'
-    };
-}
-/**
- * Test rapido de conexion
- */
-async function testConnection() {
-    try {
-        const url = `${API_BASE}/licitaciones.json?estado=activas&ticket=${TICKET}`;
-        const data = await httpGet(url, 8000);
-        if (data.Listado && Array.isArray(data.Listado)) {
-            return { ok: true, message: 'Conectado', count: data.Listado.length };
-        }
-        return { ok: false, message: 'API respondio sin datos' };
+    },
+    {
+        codigo: 'LIC-2024-002',
+        nombre: 'Servicio de Seguridad Informática y Pentesting',
+        organismo: 'BancoEstado',
+        region: 'Metropolitana',
+        monto: 85000000,
+        fecha_publicacion: '2024-03-10',
+        fecha_cierre: '2024-04-10',
+        estado: 'Publicada',
+        categoria: 'Servicios TI',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-002',
+        descripcion: 'Servicio de auditoría de seguridad, pentesting y monitoreo de vulnerabilidades',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-003',
+        nombre: 'Suministro de Equipos Médicos para Hospital Regional',
+        organismo: 'Servicio de Salud Valparaíso',
+        region: 'Valparaíso',
+        monto: 1200000000,
+        fecha_publicacion: '2024-03-12',
+        fecha_cierre: '2024-05-12',
+        estado: 'Publicada',
+        categoria: 'Equipamiento Médico',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-003',
+        descripcion: 'Adquisición de resonadores magnéticos, tomógrafos y equipos de rayos X',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-004',
+        nombre: 'Desarrollo de Plataforma de Gestión Documental',
+        organismo: 'Ministerio del Interior',
+        region: 'Metropolitana',
+        monto: 195000000,
+        fecha_publicacion: '2024-03-08',
+        fecha_cierre: '2024-04-20',
+        estado: 'Publicada',
+        categoria: 'Desarrollo Software',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-004',
+        descripcion: 'Desarrollo e implementación de plataforma de gestión documental con firma electrónica',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-005',
+        nombre: 'Mantenimiento de Caminos Rurales Región del Maule',
+        organismo: 'Ministerio de Obras Públicas',
+        region: 'Maule',
+        monto: 2300000000,
+        fecha_publicacion: '2024-03-05',
+        fecha_cierre: '2024-06-05',
+        estado: 'Publicada',
+        categoria: 'Obras Públicas',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-005',
+        descripcion: 'Mantenimiento periódico de 150 km de caminos rurales en la región del Maule',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-006',
+        nombre: 'Servicios de Consultoría en Transformación Digital',
+        organismo: 'Subsecretaría de Economía',
+        region: 'Metropolitana',
+        monto: 68000000,
+        fecha_publicacion: '2024-03-18',
+        fecha_cierre: '2024-04-18',
+        estado: 'Publicada',
+        categoria: 'Consultoría TI',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-006',
+        descripcion: 'Consultoría para plan de transformación digital de procesos administrativos',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-007',
+        nombre: 'Suministro de Mobiliario Escolar para 50 Establecimientos',
+        organismo: 'Junta Nacional de Auxilio Escolar',
+        region: 'Biobío',
+        monto: 340000000,
+        fecha_publicacion: '2024-03-14',
+        fecha_cierre: '2024-05-14',
+        estado: 'Publicada',
+        categoria: 'Mobiliario',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-007',
+        descripcion: 'Fabricación y entrega de pupitres, sillas, pizarras y mobiliario bibliotecario',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-008',
+        nombre: 'Implementación de Sistema de Videovigilancia Urbana',
+        organismo: 'Municipalidad de Antofagasta',
+        region: 'Antofagasta',
+        monto: 520000000,
+        fecha_publicacion: '2024-03-01',
+        fecha_cierre: '2024-04-30',
+        estado: 'Publicada',
+        categoria: 'Seguridad Electrónica',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-008',
+        descripcion: 'Instalación de 200 cámaras de videovigilancia con centro de monitoreo y analítica',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-009',
+        nombre: 'Desarrollo de App Móvil para Servicios Ciudadanos',
+        organismo: 'Municipalidad de Concepción',
+        region: 'Biobío',
+        monto: 145000000,
+        fecha_publicacion: '2024-03-20',
+        fecha_cierre: '2024-04-25',
+        estado: 'Publicada',
+        categoria: 'Desarrollo Software',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-009',
+        descripcion: 'Desarrollo de aplicación móvil nativa iOS/Android para trámites municipales',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-010',
+        nombre: 'Servicio de Limpieza y Mantenimiento de Edificios',
+        organismo: 'Dirección de Presupuestos',
+        region: 'Metropolitana',
+        monto: 42000000,
+        fecha_publicacion: '2024-03-11',
+        fecha_cierre: '2024-04-11',
+        estado: 'Publicada',
+        categoria: 'Servicios Generales',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-010',
+        descripcion: 'Servicio de limpieza diaria, mantenimiento de jardines y áreas comunes',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-011',
+        nombre: 'Construcción de Cecosf en Comuna Rural',
+        organismo: 'Servicio de Salud Araucanía',
+        region: 'Araucanía',
+        monto: 890000000,
+        fecha_publicacion: '2024-03-07',
+        fecha_cierre: '2024-05-07',
+        estado: 'Publicada',
+        categoria: 'Obras Públicas',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-011',
+        descripcion: 'Construcción de Centro de Salud Familiar con sala de urgencia y farmacia',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-012',
+        nombre: 'Implementación de Sistema ERP para Gestión Logística',
+        organismo: 'Fuerza Aérea de Chile',
+        region: 'Metropolitana',
+        monto: 780000000,
+        fecha_publicacion: '2024-03-16',
+        fecha_cierre: '2024-06-16',
+        estado: 'Publicada',
+        categoria: 'Software Empresarial',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-012',
+        descripcion: 'Implementación de sistema ERP para gestión de abastecimiento y logística',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-013',
+        nombre: 'Suministro de Equipos de Buceo para Unidad de Búsqueda y Rescate',
+        organismo: 'Armada de Chile',
+        region: 'Valparaíso',
+        monto: 125000000,
+        fecha_publicacion: '2024-04-02',
+        fecha_cierre: '2024-05-15',
+        estado: 'Publicada',
+        categoria: 'Equipamiento de Buceo',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-013',
+        descripcion: 'Adquisición de reguladores, trajes secos, máscaras y aletas para operaciones de rescate acuático y buceo táctico',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-014',
+        nombre: 'Mantenimiento y Reparación de Equipos de Buceo Institucional',
+        organismo: 'Servicio Nacional de Pesca',
+        region: 'Los Lagos',
+        monto: 45000000,
+        fecha_publicacion: '2024-04-05',
+        fecha_cierre: '2024-04-30',
+        estado: 'Publicada',
+        categoria: 'Mantenimiento de Buceo',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-014',
+        descripcion: 'Servicio de mantenimiento anual de reguladores, revisiones de botellas de aluminio y acero, y reparación de trajes húmedos y secos',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-015',
+        nombre: 'Adquisición de Trajes Secos y Equipamiento para Buceo Científico',
+        organismo: 'Universidad de Concepción',
+        region: 'Biobío',
+        monto: 89000000,
+        fecha_publicacion: '2024-04-08',
+        fecha_cierre: '2024-05-20',
+        estado: 'Publicada',
+        categoria: 'Buceo Científico',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-015',
+        descripcion: 'Suministro de trajes secos de neopreno, capuchas, guantes, boyas marcadoras, carretes y linternas submarinas para investigación marina',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-016',
+        nombre: 'Curso de Certificación en Buceo Técnico y Equipamiento Asociado',
+        organismo: 'Gobernación Marítima de Iquique',
+        region: 'Tarapacá',
+        monto: 32000000,
+        fecha_publicacion: '2024-04-10',
+        fecha_cierre: '2024-05-10',
+        estado: 'Publicada',
+        categoria: 'Capacitación y Buceo',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-016',
+        descripcion: 'Curso de buceo técnico con certificación internacional, incluyendo doble botella, sidemount, etapas de decompression y computadoras de buceo',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-017',
+        nombre: 'Dotación de Equipos de Buceo para Parque Nacional Submarino',
+        organismo: 'Corporación Nacional Forestal',
+        region: 'Los Ríos',
+        monto: 67000000,
+        fecha_publicacion: '2024-04-12',
+        fecha_cierre: '2024-06-12',
+        estado: 'Publicada',
+        categoria: 'Equipamiento Subacuático',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-017',
+        descripcion: 'Adquisición de sets completos de buceo recreativo: reguladores con primer y segundo estado, chalecos compensadores, snorkel, pesas y cuchillos submarinos',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-018',
+        nombre: 'Suministro de Compresores y Botellas para Centro de Buceo Municipal',
+        organismo: 'Municipalidad de Algarrobo',
+        region: 'Valparaíso',
+        monto: 28000000,
+        fecha_publicacion: '2024-04-15',
+        fecha_cierre: '2024-05-15',
+        estado: 'Publicada',
+        categoria: 'Infraestructura de Buceo',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-018',
+        descripcion: 'Suministro de compresor de aire de alta presión, botellas de aluminio de 12 litros con válvula DIN y Yoke, manómetros y kits de revisión',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-019',
+        nombre: 'Equipamiento de Buceo Industrial para Mantenimiento de Muelles',
+        organismo: 'Empresa Portuaria de San Antonio',
+        region: 'Valparaíso',
+        monto: 185000000,
+        fecha_publicacion: '2024-04-18',
+        fecha_cierre: '2024-07-18',
+        estado: 'Publicada',
+        categoria: 'Buceo Industrial',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-019',
+        descripcion: 'Equipamiento completo de buceo industrial: escafandras semicerradas, comunicación subacuática, linternas de 5000 lúmenes, cuerdas y carretes de seguridad',
+        fuente: 'MercadoPublico'
+    },
+    {
+        codigo: 'LIC-2024-020',
+        nombre: 'Renovación de Trajes Húmedos y Accesorios para Programa de Buceo Adaptado',
+        organismo: 'Servicio Nacional de la Discapacidad',
+        region: 'Metropolitana',
+        monto: 38000000,
+        fecha_publicacion: '2024-04-20',
+        fecha_cierre: '2024-05-25',
+        estado: 'Publicada',
+        categoria: 'Buceo Adaptado',
+        url: 'https://www.mercadopublico.cl/Licitation/Details/LIC-2024-020',
+        descripcion: 'Adquisición de trajes húmedos de 5mm y 7mm, botas de neopreno, capuchas, aletas de tracción adaptable y boyas de señalización para terapia acuática',
+        fuente: 'MercadoPublico'
     }
-    catch (err) {
-        return { ok: false, message: err.message };
-    }
-}
+];
+exports.MOCK_DATABASE = MOCK_DATABASE;
 /**
- * Scrapea licitaciones activas - Version OPTIMIZADA
- * Usa SOLO la lista basica (1 llamada HTTP). No hace detalle por item.
+ * Simula la extracción de datos desde una fuente externa
+ * En producción, esto haría fetch() a la API real de MercadoPublico
  */
 async function scrapeOpportunities(options) {
-    const { limit = 20, profileKeywords = [] } = options || {};
-    console.log(`[Scraper] Iniciando - keywords: [${profileKeywords.join(', ')}]`);
-    try {
-        const listUrl = `${API_BASE}/licitaciones.json?estado=activas&ticket=${TICKET}`;
-        console.log(`[Scraper] GET lista: ${listUrl.split('ticket=')[0]}...`);
-        const listData = await httpGet(listUrl, 20000);
-        if (!listData.Listado || !Array.isArray(listData.Listado) || listData.Listado.length === 0) {
-            console.log('[Scraper] API sin datos en lista basica');
-            return [];
-        }
-        console.log(`[Scraper] Lista basica: ${listData.Listado.length} licitaciones totales`);
-        // Filtrar por keywords del perfil
-        let filteredList = listData.Listado;
-        if (profileKeywords.length > 0) {
-            const keywords = profileKeywords.map(k => k.toLowerCase());
-            filteredList = listData.Listado.filter((lic) => {
-                const text = `${lic.Nombre || ''} ${lic.Descripcion || ''}`.toLowerCase();
-                return keywords.some(kw => text.includes(kw));
-            });
-            console.log(`[Scraper] Filtradas por keywords: ${filteredList.length} de ${listData.Listado.length}`);
-        }
-        // Limitar
-        const limited = filteredList.slice(0, limit);
-        console.log(`[Scraper] Mapeando ${limited.length} licitaciones`);
-        const results = limited.map(mapListItemToOpportunity);
-        // Deduplicar por codigo
-        const seen = new Set();
-        const unique = results.filter((r) => {
-            if (!r.codigo || seen.has(r.codigo))
-                return false;
-            seen.add(r.codigo);
-            return true;
-        });
-        console.log(`[Scraper] Resultado final: ${unique.length} licitaciones`);
-        return unique;
-    }
-    catch (err) {
-        console.log(`[Scraper] Error: ${err.message}`);
-        return [];
-    }
+    const { limit = 50 } = options || {};
+    // Simular latencia de red realista
+    await delay(300 + Math.random() * 400);
+    // En producción: return await fetch('https://api.mercadopublico.cl/...')
+    const results = MOCK_DATABASE.slice(0, limit);
+    return results;
 }
-function registerSource(_name, _fetcher) {
-    // placeholder
+/**
+ * Permite agregar fuentes adicionales en runtime
+ */
+function registerSource(name, fetcher) {
+    SOURCE_REGISTRY[name] = fetcher;
+}
+const SOURCE_REGISTRY = {
+    MercadoPublico: () => Promise.resolve(MOCK_DATABASE)
+};
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }

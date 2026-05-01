@@ -3,7 +3,7 @@
 // scrape → normalize → score → output
 // ==========================================
 
-import { PipelineConfig, PipelineResult, ScoredOpportunity, Opportunity } from '../types';
+import { PipelineConfig, PipelineResult, ScoredOpportunity } from '../types';
 import { scrapeOpportunities } from '../scraper';
 import { normalizeOpportunities } from '../normalizer';
 import { scoreOpportunities } from '../scoring';
@@ -15,8 +15,8 @@ import { scoreOpportunities } from '../scoring';
 export async function runPipeline(config: PipelineConfig): Promise<PipelineResult> {
   const { profile, sources, limit } = config;
   
-  // 1. SCRAPE (con keywords del perfil para filtrar)
-  const raw = await scrapeOpportunities({ sources, limit, profileKeywords: profile.keywords });
+  // 1. SCRAPE
+  const raw = await scrapeOpportunities({ sources, limit });
   
   // 2. NORMALIZE
   const normalized = normalizeOpportunities(raw);
@@ -50,7 +50,7 @@ export async function runPipeline(config: PipelineConfig): Promise<PipelineResul
  * Calcula estadísticas desde el array de oportunidades
  * (NO depende de otra fuente de datos)
  */
-export function calculateStats(opportunities: Opportunity[]) {
+export function calculateStats(opportunities: ScoredOpportunity[]) {
   const total = opportunities.length;
   const alta = opportunities.filter(o => o.priority === 'alta').length;
   const media = opportunities.filter(o => o.priority === 'media').length;

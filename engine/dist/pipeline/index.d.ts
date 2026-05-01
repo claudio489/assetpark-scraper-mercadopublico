@@ -1,4 +1,4 @@
-import { PipelineConfig, PipelineResult, Opportunity } from '../types';
+import { PipelineConfig, PipelineResult, ScoredOpportunity } from '../types';
 /**
  * Ejecuta el pipeline completo:
  * scrape → normalize → score → output
@@ -8,7 +8,7 @@ export declare function runPipeline(config: PipelineConfig): Promise<PipelineRes
  * Calcula estadísticas desde el array de oportunidades
  * (NO depende de otra fuente de datos)
  */
-export declare function calculateStats(opportunities: Opportunity[]): {
+export declare function calculateStats(opportunities: ScoredOpportunity[]): {
     total: number;
     alta: number;
     media: number;

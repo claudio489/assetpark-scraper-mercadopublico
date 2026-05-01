@@ -23,4 +23,3 @@ __exportStar(require("./normalizer"), exports);
 __exportStar(require("./scoring"), exports);
 __exportStar(require("./profiles"), exports);
 __exportStar(require("./pipeline"), exports);
-__exportStar(require("./analyzer"), exports);

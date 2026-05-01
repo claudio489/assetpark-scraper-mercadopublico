@@ -15,8 +15,8 @@ const scoring_1 = require("../scoring");
  */
 async function runPipeline(config) {
     const { profile, sources, limit } = config;
-    // 1. SCRAPE (con keywords del perfil para filtrar)
-    const raw = await (0, scraper_1.scrapeOpportunities)({ sources, limit, profileKeywords: profile.keywords });
+    // 1. SCRAPE
+    const raw = await (0, scraper_1.scrapeOpportunities)({ sources, limit });
     // 2. NORMALIZE
     const normalized = (0, normalizer_1.normalizeOpportunities)(raw);
     // 3. SCORE
