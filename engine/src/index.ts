@@ -1,6 +1,11 @@
-import { scrapeOpportunities } from "./scraper";
+// ==========================================
+// INDEX - Exportaciones públicas del engine
+// ==========================================
 
-export async function runPipeline() {
-  const data = await scrapeOpportunities();
-  return data.slice(0, 50);
-}
+export * from './types';
+export * from './scraper';
+export * from './normalizer';
+export * from './scoring';
+export * from './profiles';
+export * from './pipeline';
+export * from './analyzer';

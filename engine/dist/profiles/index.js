@@ -52,6 +52,97 @@ const DEFAULT_PROFILES = {
         regions: ['Todas'],
         excludedKeywords: []
     },
+    imprenta: {
+        id: 'imprenta',
+        name: 'Imprenta / Gráfica / Publicidad',
+        rubros: [
+            'Imprenta', 'Gráfica', 'Publicidad Impresa', 'Comunicación Visual',
+            'Señalética', 'Rotulación', 'Impresión Digital', 'Offset',
+            'Serigrafía', 'Gigantografía', 'Packaging', 'Material POP'
+        ],
+        keywords: [
+            // Impresión general
+            'imprenta', 'imprentas', 'impresión', 'impresion', 'printing', 'print',
+            'gráfica', 'grafica', 'gráfico', 'grafico', 'comunicación visual', 'comunicacion visual',
+            'artes gráficas', 'artes graficas', 'pre-prensa', 'preprensa', 'impresión comercial',
+            // Pendones / Banners / Gigantografía
+            'pendón', 'pendon', 'pendones', 'pvc', 'banner', 'banners', 'gigantografía', 'gigantografia',
+            'frontlight', 'backlight', 'lona', 'lonas', 'malla publicitaria', 'mesh', 'publicidad exterior',
+            'valla', 'vallas', 'cartel', 'carteles', 'cartelera', 'pasacalle', 'pasacalles', 'banderola',
+            // Letreros / Señalética / Luminosos
+            'letrero', 'letreros', 'rótulo', 'rotulo', 'rótulos', 'rotulos', 'señalética', 'señaletica',
+            'señalización', 'señalizacion', 'señal', 'señales', 'letra corpórea', 'letra corporea',
+            'letras corpóreas', 'letras corporeas', 'luminoso', 'luminosos', 'neón', 'neon', 'led',
+            'caja de luz', 'cajas de luz', 'backlit', 'display luminoso', 'totem', 'tótem', 'totems',
+            'direccional', 'direccionales', 'nomenclatura', 'placa', 'placas', 'placa identificación',
+            // Vinilos / Autoadhesivos / Stickers
+            'autoadhesivo', 'autoadhesivos', 'vinilo', 'vinilos', 'adhesivo', 'adhesivos',
+            'calcomanía', 'calcomania', 'calcomanías', 'calcomanias', 'sticker', 'stickers',
+            ' etiqueta', 'etiquetas', 'label', 'labels', 'microperforado', 'esmerilado',
+            'vinilo de corte', 'vinilo impresión', 'vinilo de recorte', 'wrap', 'wrapping',
+            // Troquelado / Corte / Acabados
+            'troquelado', 'troquel', 'troqueles', 'corte', 'corte especial', 'plotter de corte',
+            'router cnc', 'cnc', 'corte láser', 'corte laser', 'láser', 'laser', 'grabado',
+            'grabado láser', 'grabado laser', 'corte digital', 'waterjet', 'corte por chorro',
+            // Materiales rígidos / Soportes
+            'foamboard', 'foam', 'kapa', 'kapafix', 'acrílico', 'acrilico', 'acrílicos', 'acrilicos',
+            'policarbonato', 'aluminio compuesto', 'composite', 'dibond', 'alucobond', ' MDF',
+            'pvc expandido', 'forex', 'sintra', 'coroplast', 'correx', 'cartón pluma', 'carton pluma',
+            'lámina', 'lamina', 'láminas', 'laminas', 'acetato', 'pet', 'poliestireno',
+            // Offset / Digital / Serigrafía / Sublimación
+            'offset', 'impresión offset', 'impresion offset', 'digital', 'impresión digital',
+            'impresion digital', 'plotter', 'plotters', 'gran formato', 'gran formato impresión',
+            'serigrafía', 'serigrafia', 'serigrafías', 'serigrafias', 'sublimación', 'sublimacion',
+            'transfer', 'transferencia', 'estampado', 'estampado textil', 'dtg', 'directo a prenda',
+            'uv', 'impresión uv', 'impresion uv', 'uv led', 'barniz uv', 'barniz',
+            // Publicidad impresa / POP / Editorial
+            'folleto', 'folletos', 'flyer', 'flyers', 'afiche', 'afiches', 'póster', 'poster',
+            'brochure', 'brochures', 'catálogo', 'catalogo', 'catálogos', 'catalogos',
+            'revista', 'revistas', 'libro', 'libros', 'editorial', 'encuadernación', 'encuadernacion',
+            'plastificado', 'plastificación', 'plastificacion', 'laminado', 'laminación', 'laminacion',
+            'tapa dura', 'rustica', 'cosido', 'pegamento', 'espiral', 'anillado', 'encolado',
+            'cuaderno', 'cuadernos', 'agenda', 'agendas', 'tarjeta', 'tarjetas', 'invitación',
+            'invitacion', 'invitaciones', 'menú', 'menu', 'menús', 'menus',
+            // Packaging / Envases / Cajas
+            'packaging', 'empaque', 'empaques', 'envase', 'envases', 'caja', 'cajas',
+            'caja de cartón', 'caja de regalo', 'bolsa', 'bolsas', 'bolsa de papel',
+            'bolsa plástica', 'bolsa plastica', 'estuche', 'estuches', 'tubo', 'tubos',
+            'doypack', 'doy pack', 'stand up pouch', 'flexografía', 'flexografia', 'flexo',
+            'bolsas preformadas', 'pouch', 'sachet', 'sachets', 'blister', 'blisters',
+            // Material POP / Exhibidores / Displays
+            'material pop', 'pop', 'display', 'displays', 'exhibidor', 'exhibidores',
+            'punto de venta', 'pdv', 'mostrador', 'counter', 'counter display', 'floor stand',
+            'dispensador', 'expositor', 'expositores', 'mobiliario comercial', 'mobiliario pdv',
+            'caballete', 'caballete publicitario', 'parante', 'porta gráfica', 'porta grafica',
+            'roll up', 'rollup', 'mini roll up', 'enrollable', 'retractil', 'x banner',
+            'banner x', 'arana', 'araña', 'backwall', 'back wall', 'muro de imágenes',
+            'isla', 'isla comercial', 'modulo', 'módulo', 'módulos', 'modulos',
+            // Rotulación / Instalación / Vehicular
+            'rotulación', 'rotulacion', 'rotulaciones', 'rotulaciones', 'instalación', 'instalacion',
+            'montaje', 'montajes', 'colocación', 'colocacion', 'adhesión', 'adhesion',
+            'vehicular', 'vehiculo', 'vehículo', 'vehiculos', 'vehículos', 'flota', 'flotas',
+            'carrocería', 'carroceria', 'carro', 'auto', 'camión', 'camion', 'bus',
+            'colectivo', 'taxi', 'transporte', 'movilidad', 'magnético', 'magnetico',
+            'imantado', 'iman', 'imanes', 'placa magnética', 'cobertura vehicular',
+            // Plotter / Router / CNC / Otros equipos
+            'plotter', 'plotters', 'impresora gran formato', 'impresora gran formato',
+            'roland', 'hp latex', 'mimaki', 'mutoh', 'efi', 'efi vutek', 'durst',
+            'cortadora', 'guillotina', 'guillotinas', 'plegadora', 'plegadoras',
+            'refiladora', 'perforadora', 'espiraladora', 'encuadernadora',
+            // Términos en inglés asociados
+            'sign', 'signage', 'signs', 'printer', 'vinyl', 'cutting', 'printing press',
+            'large format', 'wide format', 'digital print', 'screen print', 'litho',
+            'lithography', 'bindery', 'binding', 'laminate', 'finishing', 'post press',
+            'pre press', 'bind', 'die cut', 'diecut', 'kiss cut', 'kisscut',
+            ' POP display', 'retail display', 'instore', 'in-store', 'visual merchandising',
+            'wayfinding', 'branding', 'corporate identity', 'identity', 'logotype',
+            'logo', 'brand', 'rediseño', 'redisenio', 'redesign', 'refresh'
+        ],
+        regions: ['Todas'],
+        minAmount: 50000,
+        maxAmount: 1000000000,
+        excludedKeywords: []
+    },
     buceo: {
         id: 'buceo',
         name: 'Importación Equipo de Buceo',

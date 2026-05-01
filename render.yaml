@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: assetpark-scraper
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: |
+      set -e
+      echo "=== Instalando Engine ==="
+      cd engine && npm install && cd ..
+      echo "=== Compilando Engine ==="
+      cd engine && node node_modules/typescript/bin/tsc && cd ..
+      echo "=== Instalando API ==="
+      cd api && npm install && cd ..
+      echo "=== Compilando API ==="
+      cd api && node node_modules/typescript/bin/tsc && cd ..
+      echo "=== Copiando frontend ==="
+      mkdir -p api/public
+      cp -r frontend/* api/public/ 2>/dev/null || echo "No hay frontend para copiar"
+      echo "=== Build OK ==="
+    startCommand: cd api && NODE_ENV=production node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MP_TICKET
+        value: 8BBCAB7E-0911-4E40-BD68-C56A0A33FF78
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/health
+    autoDeploy: true

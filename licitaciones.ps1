@@ -1,5 +1,5 @@
 # ==========================================
-# Licitaciones Intelligence - Script PowerShell
+# AssetPark Scraper MercadoPublico - Script PowerShell
 # Compatible con Windows PowerShell 5.1
 # ==========================================
 
@@ -41,7 +41,7 @@ function Write-Err($msg) {
 function Install-All {
     Write-Step "Instalando dependencias..."
 
-    $dirs = @("engine", "api", "frontend")
+    $dirs = @("engine", "api")
     foreach ($d in $dirs) {
         $path = Join-Path $RootDir $d
         if (-not (Test-Path $path)) {
@@ -62,6 +62,7 @@ function Install-All {
         Set-Location $RootDir
         Write-Ok "$d listo"
     }
+    Write-Ok "Frontend no requiere dependencias (HTML vanilla)"
 }
 
 # ==========================================
@@ -86,13 +87,7 @@ function Build-All {
     Set-Location $RootDir
     Write-Ok "API compilada"
 
-    # Frontend
-    Set-Location (Join-Path $RootDir "frontend")
-    Write-Host "  -> Compilando frontend..." -ForegroundColor Gray
-    & node node_modules/vite/bin/vite.js build
-    if ($LASTEXITCODE -ne 0) { throw "Error compilando frontend" }
-    Set-Location $RootDir
-    Write-Ok "Frontend compilado"
+    Write-Ok "Frontend es HTML vanilla (no requiere compilación)"
 
     Write-Host "" -ForegroundColor Green
     Write-Host "[BUILD COMPLETO]" -ForegroundColor Green
@@ -113,28 +108,26 @@ function Start-Dev {
         Set-Location $RootDir
     }
 
+    # Ensure API compiled
+    $apiDist = Join-Path $RootDir "api\dist"
+    if (-not (Test-Path $apiDist)) {
+        Write-Warn "API no compilada. Compilando primero..."
+        Set-Location (Join-Path $RootDir "api")
+        & node node_modules/typescript/bin/tsc
+        Set-Location $RootDir
+    }
+
     $apiDir = Join-Path $RootDir "api"
-    $frontendDir = Join-Path $RootDir "frontend"
 
-    Write-Host "  -> Iniciando API en puerto 3001..." -ForegroundColor Gray
+    Write-Host "  -> Iniciando servidor (API + Frontend) en puerto 3001..." -ForegroundColor Gray
     Start-Process powershell -ArgumentList @(
         "-NoExit",
         "-Command",
-        "Set-Location '$apiDir'; Write-Host '=== API LICITACIONES (puerto 3001) ===' -ForegroundColor Green; node node_modules/ts-node/dist/bin.js src/index.ts"
-    )
-
-    Start-Sleep -Seconds 2
-
-    Write-Host "  -> Iniciando Frontend en puerto 3000..." -ForegroundColor Gray
-    Start-Process powershell -ArgumentList @(
-        "-NoExit",
-        "-Command",
-        "Set-Location '$frontendDir'; Write-Host '=== FRONTEND LICITACIONES (puerto 3000) ===' -ForegroundColor Green; node node_modules/vite/bin/vite.js"
+        "Set-Location '$apiDir'; Write-Host '=== ASSETPARK SCRAPER (puerto 3001) ===' -ForegroundColor Green; Write-Host 'Frontend + API en un solo servidor' -ForegroundColor Blue; node dist/index.js"
     )
 
     Write-Host "" -ForegroundColor Green
-    Write-Host "  API:      http://localhost:3001" -ForegroundColor Blue
-    Write-Host "  Frontend: http://localhost:3000" -ForegroundColor Blue
+    Write-Host "  Abrir navegador: http://localhost:3001" -ForegroundColor Blue
 }
 
 # ==========================================
@@ -153,7 +146,7 @@ function Start-Production {
     }
 
     Set-Location (Join-Path $RootDir "api")
-    Write-Host "Iniciando API en puerto 3001..." -ForegroundColor Green
+    Write-Host "Iniciando servidor en puerto 3001..." -ForegroundColor Green
     & node dist/index.js
 }
 
@@ -174,7 +167,7 @@ function Test-Engine {
 const { runPipeline, getProfile, calculateStats } = require('./engine/dist');
 
 async function test() {
-    console.log('Perfiles disponibles: constructora, tecnologia, salud, general');
+    console.log('Perfiles disponibles: constructora, tecnologia, salud, general, buceo, imprenta');
 
     const techProfile = getProfile('tecnologia');
     const techResult = await runPipeline({ profile: techProfile, limit: 5 });
@@ -215,8 +208,7 @@ function Clean-All {
 
     $paths = @(
         "$RootDir\engine\dist",
-        "$RootDir\api\dist",
-        "$RootDir\frontend\dist"
+        "$RootDir\api\dist"
     )
 
     foreach ($p in $paths) {

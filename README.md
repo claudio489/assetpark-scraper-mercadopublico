@@ -1,161 +1,90 @@
-# Licitaciones Intelligence
+# AssetPark Scraper MercadoPublico
 
-Sistema modular de inteligencia de licitaciones públicas. Motor independiente + API REST + Frontend desacoplado.
+Motor de inteligencia de licitaciones para prospectar oportunidades de negocio en MercadoPublico.cl.
 
 ## Arquitectura
 
-```
-licitaciones-engine/
-├── engine/          # Motor puro (lógica, sin framework web)
-│   ├── src/
-│   │   ├── types/      # Tipos core
-│   │   ├── scraper/    # Extracción de datos
-│   │   ├── normalizer/ # Normalización a formato estándar
-│   │   ├── scoring/    # Motor de puntuación unificado
-│   │   ├── profiles/   # Perfiles de cliente
-│   │   └── pipeline/   # Orquestador scrape → normalize → score
-│   └── dist/
-├── api/             # API REST simple (Express, sin auth, sin tRPC)
-│   └── src/
-└── frontend/        # Módulo React ligero (Vite)
-    └── src/
-        ├── components/   # Dashboard, Tabla, Modal
-        ├── hooks/        # useOpportunities
-        └── types/
-```
+- **engine/**: Lógica pura (TypeScript) - scraper, perfiles, scoring, pipeline
+- **api/**: Servidor Express REST - expone endpoints + sirve frontend
+- **frontend/**: HTML + JavaScript vanilla (sin build) - una sola página funcional
+- **render.yaml**: Configuración para deploy en Render.com (gratis)
 
-## Stack
+## Perfiles de búsqueda predefinidos
 
-| Capa | Tecnología |
-|------|-----------|
-| Engine | Node.js + TypeScript (puro) |
-| API | Express + TypeScript |
-| Frontend | React 18 + Vite + TypeScript |
-| Estado | React hooks (sin Redux/Zustand) |
-| Estilos | CSS puro (sin Tailwind/Bootstrap) |
+| Perfil | Rubro |
+|--------|-------|
+| `constructora` | Construcción, obras civiles, edificación |
+| `tecnologia` | Software, servicios TI, ciberseguridad |
+| `salud` | Insumos médicos, equipamiento hospitalario |
+| `buceo` | Importación equipo de buceo técnico |
+| `imprenta` | Imprenta, gráfica, publicidad, pendones PVC, letreros, autoadhesivos, troquelado |
+| `general` | Búsqueda amplia sin filtros |
 
-## Reglas de arquitectura
+Cada perfil es un **cañón de ventas empaquetado** que busca oportunidades específicas según keywords.
 
-- **Sin base de datos**: Todo en memoria / mock
-- **Sin autenticación**: API pública por diseño (módulo interno)
-- **Sin tRPC**: REST JSON simple
-- **Sin sesiones**: Stateless
-- **Sin OAuth**: Sin flujos de login
-- **Engine desacoplado**: Puede usarse standalone o importado
-
-## Instalación y Ejecución (PowerShell)
-
-El proyecto incluye un script `licitaciones.ps1` que automatiza todo.
-
-### 1. Instalar dependencias
+## Uso local (Windows)
 
 ```powershell
-cd licitaciones-engine
+# Instalar dependencias (solo engine + api, frontend no necesita)
 .\licitaciones.ps1 -Command install
-```
 
-### 2. Modo desarrollo (abre 2 ventanas de PowerShell)
-
-```powershell
-.\licitaciones.ps1 -Command dev
-```
-
-Esto abre automáticamente:
-- API en http://localhost:3001
-- Frontend en http://localhost:3000
-
-### 3. Compilar para producción
-
-```powershell
+# Compilar
 .\licitaciones.ps1 -Command build
+
+# Levantar (un solo servidor en puerto 3001)
+.\licitaciones.ps1 -Command dev
+
+# Abrir navegador: http://localhost:3001
 ```
 
-### 4. Iniciar en producción
+## Deploy en Render (recomendado)
 
 ```powershell
-.\licitaciones.ps1 -Command start
+# Prepara repositorio Git e instrucciones
+.\deploy-to-render.ps1 -Command init
 ```
 
-### 5. Test del engine
+Seguí las instrucciones que aparecen. Resumen:
 
-```powershell
-.\licitaciones.ps1 -Command test
+1. Crear repo en GitHub (público o privado)
+2. Conectar repo local a GitHub (`git remote add origin ...` + `git push`)
+3. Registrar en https://render.com con cuenta GitHub
+4. En Render: **New + → Blueprint**
+5. Seleccionar tu repo → Render lee `render.yaml` → **Apply**
+6. Esperar 2-3 minutos → listo en `https://tu-app.onrender.com`
+
+## API REST Endpoints
+
+```
+GET  /api/health              → Estado del servicio
+GET  /api/profiles            → Listar perfiles
+POST /api/profiles            → Crear perfil
+GET  /api/opportunities       → Últimas oportunidades
+GET  /api/opportunities/stats → Estadísticas
+POST /api/opportunities/run   → Ejecutar pipeline
+
+GET    /api/portfolio              → Portfolio guardado
+GET    /api/portfolio/stats        → Stats del portfolio
+POST   /api/portfolio              → Guardar licitación
+PUT    /api/portfolio/:id/score    → Editar score
+PUT    /api/portfolio/:id/category → Cambiar categoría
+PUT    /api/portfolio/:id/profile  → Cambiar perfil asignado
+PUT    /api/portfolio/:id/notes    → Editar notas
+DELETE /api/portfolio/:id         → Eliminar
 ```
 
-### 6. Limpiar todo
+## Funcionalidades
 
-```powershell
-.\licitaciones.ps1 -Command clean
-```
+- **Pipeline**: Scrapea MercadoPublico.cl en tiempo real
+- **Scoring automático**: Match por keywords + simulación AI
+- **Portfolio**: Guarda licitaciones para postular con categoría de negocio
+- **Score editable**: Click en el badge para cambiar puntaje (0-100)
+- **Perfil asignado**: Cada licitación guardada recuerda qué perfil la encontró
+- **Filtros**: Por categoría de negocio y por perfil de búsqueda
+- **Modo producción**: Un solo servidor sirve API + frontend estático
 
-### Comandos disponibles
+## Notas
 
-| Comando | Acción |
-|---------|--------|
-| `install` | Instala dependencias de engine, api y frontend |
-| `build` | Compila engine, api y frontend |
-| `dev` | Abre API y Frontend en ventanas separadas |
-| `start` | Inicia API compilada en producción |
-| `test` | Ejecuta tests del engine con todos los perfiles |
-| `clean` | Elimina `dist` y `node_modules` de todas las capas |
-
-## Endpoints API
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/profiles` | Listar perfiles |
-| POST | `/api/profiles` | Crear/actualizar perfil |
-| GET | `/api/opportunities` | Obtener licitaciones |
-| GET | `/api/opportunities/stats` | Estadísticas (calculadas del array) |
-| POST | `/api/opportunities/run` | Ejecutar pipeline |
-
-### Ejemplo: ejecutar pipeline
-
-```bash
-curl -X POST http://localhost:3001/api/opportunities/run \
-  -H "Content-Type: application/json" \
-  -d '{"profileId": "tecnologia", "limit": 20}'
-```
-
-## Perfiles predefinidos
-
-| ID | Nombre | Rubro |
-|----|--------|-------|
-| `constructora` | Constructora Demo | Obras públicas, infraestructura |
-| `tecnologia` | Empresa de Tecnología Demo | Software, TI, desarrollo |
-| `salud` | Proveedor Salud Demo | Equipamiento médico |
-| `general` | Perfil General Demo | Sin filtros |
-
-## Scoring
-
-Fórmula: `score = aiScore || matchScore || 50`
-
-- **Match score**: Basado en keywords, rubros, región y monto
-- **AI score**: Simulado (slot para embeddings/LLM en producción)
-
-Clasificación:
-- `≥ 80` → alta
-- `60-79` → media
-- `< 60` → baja
-
-## Reutilización como módulo
-
-```typescript
-import { runPipeline, getProfile } from '@licitaciones/engine';
-
-const profile = getProfile('constructora');
-const result = await runPipeline({ profile });
-```
-
-## Integración con AssetPark
-
-El frontend se embebe como módulo React importando `<App />` desde el paquete del frontend, o consumiendo la API REST desde cualquier cliente.
-
-## Roadmap a producción
-
-1. **Scraper real**: Reemplazar `MOCK_DATABASE` por fetch a API MercadoPublico
-2. **AI Score**: Conectar a servicio de embeddings (OpenAI, etc.)
-3. **Persistencia**: Agregar SQLite/Redis para cacheo (opcional)
-4. **Multi-cliente**: Perfiles por tenant en base de datos
-5. **Notificaciones**: Webhook/email cuando hay nuevas oportunidades "alta"
+- El monto de licitaciones activas no se expone por la API de MercadoPublico (muestra "No disp.")
+- Render free tier se duerme tras 15 min inactivo (despierta en ~30s)
+- Portfolio vive en memoria: se reinicia al deployar o al dormir el servicio
