@@ -16,15 +16,15 @@ const TICKET = process.env.MP_TICKET || '8BBCAB7E-0911-4E40-BD68-C56A0A33FF78';
 const MP_API = 'https://api.mercadopublico.cl/servicios/v1/publico';
 
 // ==========================================
-// PROFILES
+// PROFILES - Con negative keywords (excluded)
 // ==========================================
 const PROFILES = [
-  { id: 'buceo', name: 'Importación Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','equipo de buceo'] },
-  { id: 'constructora', name: 'Constructora / Obras Civiles', keywords: ['construccion','obra','infraestructura','edificacion','puente','pavimentacion'] },
-  { id: 'tecnologia', name: 'Tecnología / Software / TI', keywords: ['software','tecnologia','sistema','desarrollo','programacion','ciberseguridad'] },
-  { id: 'salud', name: 'Salud / Insumos Médicos', keywords: ['salud','hospital','insumos medicos','medicamentos','equipamiento medico'] },
-  { id: 'general', name: 'Perfil General', keywords: [] },
-  { id: 'imprenta', name: 'Imprenta / Gráfica / Publicidad', keywords: ['imprenta','impresion','pvc','banner','gigantografia','letrero','autoadhesivo','troquelado','offset','digital'] }
+  { id: 'constructora', name: 'Constructora / Obras Civiles', keywords: ['construccion','obra civil','obra publica','infraestructura','edificacion','puente','camino','pavimentacion','hormigon','asfalto','movimiento de tierra','demolicion','excavacion','terraplen','estructura'], excluded: ['oficina','mueble','computador','impresora','papeleria'] },
+  { id: 'tecnologia', name: 'Tecnología / Software / TI', keywords: ['software','desarrollo software','sistema informatico','plataforma digital','aplicacion movil','ciberseguridad','hosting cloud','data center','red de datos','telecomunicaciones'], excluded: ['construccion','hormigon','asfalto','medico','hospital'] },
+  { id: 'salud', name: 'Salud / Insumos Médicos', keywords: ['insumos medicos','equipamiento medico','medicamentos','material de curacion','material esteril','instrumental quirurgico','equipo de rayos x','tomografo','resonancia magnetica'], excluded: ['oficina','papeleria','computador','mueble','limpieza'] },
+  { id: 'imprenta', name: 'Imprenta / Gráfica / Publicidad', keywords: ['imprenta','impresion offset','impresion digital','pendon pvc','banner publicitario','gigantografia','letrero luminoso','rotulacion vehicular','troquelado','corte laser','vinilo de corte','serigrafia'], excluded: ['medico','hospital','insumos medicos','quirurgico'] },
+  { id: 'general', name: 'Perfil General', keywords: [], excluded: [] },
+  { id: 'buceo', name: 'Importación Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','buceo tecnico','equipo de buceo','tanque de buceo','regulador de buceo','traje de buceo','mascara de buceo','aletas de buceo','buceo profesional','buceo industrial','escafandra autonoma'], excluded: ['medico','hospital','insumos medicos','paciente','quirurgico'] }
 ];
 
 // ==========================================
@@ -58,7 +58,7 @@ function fmtAmount(amount: number): string {
 // ==========================================
 // SCRAPER - Lista básica de MercadoPublico
 // ==========================================
-async function scrapeMercadoPublico(profileKeywords: string[], limit = 20): Promise<any[]> {
+async function scrapeMercadoPublico(profileKeywords: string[], excludedKeywords: string[] = [], limit = 20): Promise<any[]> {
   try {
     const url = `${MP_API}/licitaciones.json?estado=activas&ticket=${TICKET}`;
     const data = await httpGet(url, 20000);
@@ -70,13 +70,27 @@ async function scrapeMercadoPublico(profileKeywords: string[], limit = 20): Prom
     
     let list = data.Listado;
     
-    // Filtrar por keywords
+    // Filtrar por keywords positivas
     if (profileKeywords.length > 0) {
       const kw = profileKeywords.map(k => k.toLowerCase());
       list = list.filter((lic: any) => {
         const text = `${lic.Nombre || ''} ${lic.Descripcion || ''}`.toLowerCase();
         return kw.some(w => text.includes(w));
       });
+    }
+    
+    // EXCLUIR por keywords negativas (limpiar ruido)
+    if (excludedKeywords.length > 0) {
+      const ex = excludedKeywords.map(k => k.toLowerCase());
+      const before = list.length;
+      list = list.filter((lic: any) => {
+        const text = `${lic.Nombre || ''} ${lic.Descripcion || ''}`.toLowerCase();
+        return !ex.some(w => text.includes(w));
+      });
+      const after = list.length;
+      if (before > after) {
+        console.log(`[Scraper] Excluidas ${before - after} licitaciones por keywords negativas`);
+      }
     }
     
     return list.slice(0, limit).map((lic: any) => {
@@ -93,7 +107,7 @@ async function scrapeMercadoPublico(profileKeywords: string[], limit = 20): Prom
         closingDate: (fechas.FechaCierre || lic.FechaCierre || '').split('T')[0],
         status: lic.Estado || 'Publicada',
         category: lic.Tipo || 'General',
-        url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion='')}`,
+        url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(lic.CodigoExterno || '')}`,
         source: 'MercadoPublico'
       };
     });
@@ -122,8 +136,55 @@ function calculateScore(title: string, description: string, keywords: string[]) 
 }
 
 // ==========================================
-// PORTFOLIO (in-memory)
+// ANALYZER - Scoring avanzado con criterios de negocio
 // ==========================================
+
+interface BusinessCriteria {
+  minAmount: number;
+  optimalAmount: number;
+}
+
+const BUSINESS_CRITERIA: Record<string, BusinessCriteria> = {
+  constructora: { minAmount: 10_000_000, optimalAmount: 500_000_000 },
+  tecnologia:   { minAmount: 2_000_000,   optimalAmount: 50_000_000 },
+  salud:        { minAmount: 5_000_000,   optimalAmount: 100_000_000 },
+  buceo:        { minAmount: 1_000_000,   optimalAmount: 10_000_000 },
+  imprenta:     { minAmount: 500_000,      optimalAmount: 20_000_000 },
+  general:      { minAmount: 100_000,      optimalAmount: 1_000_000 }
+};
+
+function calculateBusinessScore(amount: number, profileId: string): { score: number; reasons: string[] } {
+  const criteria = BUSINESS_CRITERIA[profileId] || BUSINESS_CRITERIA.general;
+  const reasons: string[] = [];
+  let score = 50;
+
+  if (amount === 0) {
+    reasons.push('Monto no visible (licitación activa)');
+    score = 40;
+  } else if (amount < criteria.minAmount) {
+    reasons.push(`Monto ${fmtMoney(amount)} está por debajo del mínimo operativo ${fmtMoney(criteria.minAmount)} para este rubro`);
+    score = 15;
+  } else if (amount >= criteria.optimalAmount) {
+    reasons.push(`Monto ${fmtMoney(amount)} supera el óptimo ${fmtMoney(criteria.optimalAmount)}`);
+    score = 95;
+  } else {
+    const ratio = (amount - criteria.minAmount) / (criteria.optimalAmount - criteria.minAmount);
+    score = 50 + Math.round(ratio * 45);
+    reasons.push(`Monto ${fmtMoney(amount)} dentro de rango operativo`);
+  }
+  return { score: Math.min(100, score), reasons };
+}
+
+function fmtMoney(n: number): string {
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)} mil millones`;
+  if (n >= 1_000_000) return `$${Math.round(n / 1_000_000)} millones`;
+  if (n >= 1_000) return `$${Math.round(n / 1_000)} mil`;
+  return `$${n}`;
+}
+
+// ==========================================
+// PORTFOLIO (in-memory)
+// ==================================================
 const portfolio = new Map<string, any>();
 const PORTFOLIO_CATEGORIES = ['Construcción', 'Montaje', 'Mantención', 'Suministro EPP', 'Software a la medida'];
 
@@ -173,17 +234,36 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
   
   try {
     // Timeout global de 30 segundos
-    const pipelinePromise = scrapeMercadoPublico(profile.keywords, limit);
+    const pipelinePromise = scrapeMercadoPublico(profile.keywords, (profile as any).excluded || [], limit || 50);
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('Pipeline timeout')), 30000);
     });
     
     const raw = await Promise.race([pipelinePromise, timeoutPromise]);
     
-    // Scoring
+    // Scoring + Business Analysis
     const opportunities = raw.map((op: any) => {
-      const sc = calculateScore(op.title, op.description, profile.keywords);
-      return { ...op, score: sc.score || 50, priority: sc.priority, matchScore: sc.matchScore, matchedKeywords: sc.matchedKeywords };
+      const baseSc = calculateScore(op.title, op.description, profile.keywords);
+      const bizSc = calculateBusinessScore(op.amount, profile.id);
+      
+      // Ponderación: 50% base + 50% negocio
+      const finalScore = Math.round(baseSc.score * 0.50 + bizSc.score * 0.50);
+      
+      let recommendation: string;
+      if (finalScore >= 75 && bizSc.score >= 60) recommendation = 'POSTULAR';
+      else if (finalScore >= 50 && bizSc.score >= 40) recommendation = 'EVALUAR';
+      else recommendation = 'EVITAR';
+      
+      return {
+        ...op,
+        score: finalScore,
+        priority: finalScore >= 80 ? 'alta' : finalScore >= 60 ? 'media' : 'baja',
+        matchScore: baseSc.matchScore,
+        matchedKeywords: baseSc.matchedKeywords,
+        businessScore: bizSc.score,
+        businessReasons: bizSc.reasons,
+        recommendation
+      };
     });
     
     const stats = {
@@ -223,10 +303,32 @@ app.get('/api/opportunities', (_req: Request, res: Response) => {
 
 app.get('/api/opportunities/stats', (_req: Request, res: Response) => {
   if (!lastResult) {
-    res.json({ success: true, stats: { total: 0, alta: 0, media: 0, baja: 0, averageScore: 0 } });
+    res.json({ success: true, stats: { total: 0, alta: 0, media: 0, baja: 0, averageScore: 0, postular: 0, evaluar: 0, evitar: 0, totalAmount: 0, amountsByCategory: {} } });
     return;
   }
-  res.json({ success: true, stats: lastResult.stats });
+  const ops = lastResult.opportunities;
+  const amountsByCategory: Record<string, number> = {};
+  let totalAmount = 0;
+  for (const op of ops) {
+    if (op.amount > 0) {
+      totalAmount += op.amount;
+      const cat = op.category || 'Sin categoría';
+      amountsByCategory[cat] = (amountsByCategory[cat] || 0) + op.amount;
+    }
+  }
+  const stats = {
+    total: ops.length,
+    alta: ops.filter((o: any) => o.priority === 'alta').length,
+    media: ops.filter((o: any) => o.priority === 'media').length,
+    baja: ops.filter((o: any) => o.priority === 'baja').length,
+    averageScore: ops.length > 0 ? Math.round(ops.reduce((s: number, o: any) => s + o.score, 0) / ops.length) : 0,
+    postular: ops.filter((o: any) => o.recommendation === 'POSTULAR').length,
+    evaluar: ops.filter((o: any) => o.recommendation === 'EVALUAR').length,
+    evitar: ops.filter((o: any) => o.recommendation === 'EVITAR').length,
+    totalAmount,
+    amountsByCategory
+  };
+  res.json({ success: true, stats });
 });
 
 // ---- PORTFOLIO ----
