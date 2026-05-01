@@ -1,13 +1,143 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Licitaciones Intelligence</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AssetPark Licitaciones</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#0f1923;color:#e0e0e0;padding:20px}
+h1{color:#00d4ff;margin-bottom:20px;font-size:1.5rem}
+.hdr{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.hdr label{font-weight:600;color:#aaa}
+.hdr select{background:#1a2a3a;color:#e0e0e0;border:1px solid #2a4a6a;padding:8px 12px;border-radius:6px;font-size:14px}
+.hdr button{background:#00a8ff;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px}
+.hdr button:hover{background:#0088dd}
+.hdr button:disabled{opacity:.5;cursor:not-allowed}
+.dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.dash .c{background:#1a2a3a;padding:15px;border-radius:8px;text-align:center}
+.dash .n{font-size:1.8rem;font-weight:700;color:#00d4ff}
+.dash .l{font-size:.8rem;color:#8899aa;margin-top:4px}
+.dash .n.low{color:#ff4757}.dash .n.med{color:#ffa502}.dash .n.hig{color:#2ed573}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.85rem}
+th{background:#1a3a5a;color:#00d4ff;padding:10px;text-align:left;position:sticky;top:0}
+td{padding:8px 10px;border-bottom:1px solid #2a3a4a}
+tr:hover{background:#1a2a3a}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+.badge-postular{background:#2ed573;color:#0f1923}
+.badge-evaluar{background:#ffa502;color:#0f1923}
+.badge-evitar{background:#ff4757;color:#fff}
+.empty{text-align:center;color:#8899aa;padding:40px;font-style:italic}
+.score{font-weight:700;color:#00d4ff}
+.biz-score{font-weight:600}
+.biz-postular{color:#2ed573}.biz-evaluar{color:#ffa502}.biz-evitar{color:#ff4757}
+.spinner{display:none;width:18px;height:18px;border:3px solid #1a2a3a;border-top-color:#00d4ff;border-radius:50%;animation:spin 1s linear infinite;margin-left:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{background:#ff475720;color:#ff4757;padding:12px;border-radius:6px;margin-top:10px;display:none}
+.err.show{display:block}
+.modal{display:none;position:fixed;inset:0;background:#000000cc;z-index:1000;justify-content:center;align-items:center;padding:20px}
+.modal.show{display:flex}
+.modal>div{background:#1a2a3a;padding:25px;border-radius:10px;max-width:600px;width:100%;max-height:80vh;overflow:auto}
+.modal h3{color:#00d4ff;margin-bottom:15px}
+.modal button{background:#ff4757;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;float:right}
+.modal a{color:#00d4ff}
+.reason-list{margin:10px 0;padding-left:20px}
+.reason-list li{margin:6px 0}
+</style>
+</head>
+<body>
+<h1>AssetPark - Licitaciones</h1>
+<div class="hdr">
+<label>Perfil:</label>
+<select id="prof">
+<option value="constructora">Constructora / Obras Civiles</option>
+<option value="tecnologia">Tecnologia / Infraestructura IT</option>
+<option value="salud">Salud / Instituciones Publicas</option>
+<option value="imprenta">Imprenta / Publicidad</option>
+<option value="general">General / Varios</option>
+<option value="buceo">Buceo / Deportes Acuaticos</option>
+</select>
+<button id="runBtn" onclick="runPipe()">Ejecutar Pipeline</button>
+<div class="spinner" id="spin"></div>
+<span id="runTxt"></span>
+<span id="cnt"></span>
+</div>
+<div id="dash" class="dash"></div>
+<div id="err" class="err"></div>
+<table>
+<thead><tr><th>Score</th><th>Titulo</th><th>Entidad</th><th>Region</th><th>Monto</th><th>Codigo</th><th>Negocio</th><th>Recom.</th><th>Cierre</th><th></th></tr></thead>
+<tbody id="tbl"></tbody>
+</table>
+<div class="modal" id="mod" onclick="if(event.target===this)clsMod()">
+<div><button onclick="clsMod()">Cerrar</button><h3 id="mt"></h3>
+<p id="md"></p><p><strong>Entidad:</strong> <span id="me"></span></p><p><strong>Region:</strong> <span id="mr"></span></p>
+<p><strong>Monto:</strong> <span id="mm"></span></p><p><strong>Codigo:</strong> <span id="mc"></span></p>
+<p><strong>Cierre:</strong> <span id="mcd"></span></p><p><strong>Score Negocio:</strong> <span id="mb"></span></p>
+<p><strong>Razones:</strong></p><ul class="reason-list" id="mrs"></ul>
+<p><a id="mu" href="#" target="_blank">Ver en MercadoPublico</a></p></div></div>
+<script>
+const FMT=new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0});
+let st={ops:[],load:false,pid:'constructora',tab:1};
+function $(id){return document.getElementById(id)}
+document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe()});
+
+async function runPipe(){
+if(st.load)return;st.load=true;$('runBtn').disabled=true;$('spin').style.display='inline-block';
+$('runTxt').textContent='Cargando desde MercadoPublico...';$('err').classList.remove('show');
+let data=null;try{const r=await fetch('/api/opportunities/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profileId:st.pid,limit:50})});if(r.ok)data=await r.json();}catch(e){}
+if(data&&data.success&&data.opportunities&&data.opportunities.length>0){
+st.ops=data.opportunities;renderDash();renderTbl();
+}else{st.ops=[];renderDash();renderTbl();
+$('err').textContent='Sin licitaciones activas para este perfil. Prueba con General o Imprenta.';$('err').classList.add('show');}
+st.load=false;$('runBtn').disabled=false;$('spin').style.display='none';$('runTxt').textContent='Ejecutar Pipeline';
+}
+
+function renderDash(){
+let f=st.ops;const tot=f.length;
+const hi=f.filter(o=>(o.priority||'').match(/alta|high/i)).length;
+const md=f.filter(o=>(o.priority||'').match(/media|medium/i)).length;
+const lo=f.filter(o=>(o.priority||'').match(/baja|low/i)).length;
+const po=f.filter(o=>o.recommendation==='POSTULAR').length;
+const ev=f.filter(o=>o.recommendation==='EVALUAR').length;
+const ea=f.filter(o=>o.recommendation==='EVITAR').length;
+const amt=f.reduce((a,o)=>a+(o.amount||0),0);
+let h='<div class="c"><div class="n">'+tot+'</div><div class="l">Total</div></div>';
+h+='<div class="c"><div class="n hig">'+hi+'</div><div class="l">Alta</div></div>';
+h+='<div class="c"><div class="n med">'+md+'</div><div class="l">Media</div></div>';
+h+='<div class="c"><div class="n low">'+lo+'</div><div class="l">Baja</div></div>';
+h+='<div class="c"><div class="n hig">'+po+'</div><div class="l">Postular</div></div>';
+h+='<div class="c"><div class="n med">'+ev+'</div><div class="l">Evaluar</div></div>';
+h+='<div class="c"><div class="n low">'+ea+'</div><div class="l">Evitar</div></div>';
+h+='<div class="c"><div class="n">'+FMT.format(amt)+'</div><div class="l">Monto Total</div></div>';
+$('dash').innerHTML=h;$('cnt').textContent=tot>0?'('+tot+')':'';
+}
+
+function renderTbl(){
+let f=st.ops;if(f.length===0){$('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin licitaciones. Ejecuta el pipeline.</td></tr>';return;}
+let h='';for(const o of f){
+const sc=o.score||0;const bs=o.businessScore||0;const rec=o.recommendation||'EVALUAR';
+const recClass='biz-'+rec.toLowerCase();const badgeClass='badge-'+rec.toLowerCase();
+const amt=o.amount?FMT.format(o.amount):'No disp.';const url=o.url||'#';
+h+='<tr onclick="openMod(\''+o.id+'\')">';
+h+='<td class="score">'+sc+'</td><td>'+(o.title||'')+'</td><td>'+(o.entity||'')+'</td>';
+h+='<td>'+(o.region||'')+'</td><td>'+amt+'</td><td>'+(o.id||'')+'</td>';
+h+='<td class="biz-score '+recClass+'">'+bs+'/100</td>';
+h+='<td><span class="badge '+badgeClass+'">'+rec+'</span></td>';
+h+='<td>'+(o.closingDate||'')+'</td>';
+h+='<td><a href="'+url+'" target="_blank" onclick="event.stopPropagation()">Ver</a></td></tr>';
+}$('tbl').innerHTML=h;
+}
+
+function openMod(id){const o=st.ops.find(x=>x.id===id);if(!o)return;
+$('mt').textContent=o.title||'';$('md').textContent=o.description||'';
+$('me').textContent=o.entity||'';$('mr').textContent=o.region||'';
+$('mm').textContent=o.amount?FMT.format(o.amount):'No disp.';
+$('mc').textContent=o.id||'';$('mcd').textContent=o.closingDate||'';
+$('mb').textContent=(o.businessScore||0)+'/100';
+$('mrs').innerHTML=(o.businessReasons||['Sin analisis']).map(r=>'<li>'+r+'</li>').join('');
+$('mu').href=o.url||'#';$('mod').classList.add('show');
+}
+function clsMod(){$('mod').classList.remove('show')}
+</script>
+</body>
 </html>
