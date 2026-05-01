@@ -216,7 +216,7 @@ async function runPipe(){
   let raw=[];
   if(data&&data.Listado&&data.Listado.length>0){
     raw=data.Listado.map(lic=>({
-      codigo:lic.CodigoExterno||'',nombre:lic.Nombre||'',organismo:(lic.Comprador?.NombreOrganismo||lic.Comprador?.NombreUnidad||'Organismo no especificado'),region:(lic.Comprador?.RegionUnidad||'No especificada').replace(/^Region\s*/i,''),monto:typeof lic.MontoEstimado==='number'?lic.MontoEstimado:0,fecha_publicacion:(lic.Fechas?.FechaPublicacion||'').split('T')[0],fecha_cierre:(lic.Fechas?.FechaCierre||lic.FechaCierre||'').split('T')[0],estado:lic.Estado||'Publicada',categoria:lic.Tipo||'General',url:`https://www.mercadopublico.cl/BuscarLicitacion/Home/Licitacion/${encodeURIComponent(lic.CodigoExterno||'')}`,descripcion:lic.Nombre||'',fuente:'MercadoPublico'
+      codigo:lic.CodigoExterno||'',nombre:lic.Nombre||'',organismo:(lic.Comprador?.NombreOrganismo||lic.Comprador?.NombreUnidad||'Organismo no especificado'),region:(lic.Comprador?.RegionUnidad||'No especificada').replace(/^Region\s*/i,''),monto:typeof lic.MontoEstimado==='number'?lic.MontoEstimado:0,fecha_publicacion:(lic.Fechas?.FechaPublicacion||'').split('T')[0],fecha_cierre:(lic.Fechas?.FechaCierre||lic.FechaCierre||'').split('T')[0],estado:lic.Estado||'Publicada',categoria:lic.Tipo||'General',url:`https://www.mercadopublico.cl/BuscarLicitacion/Home/FichaLicitacion/?codigo=${encodeURIComponent(lic.CodigoExterno||'')}`,descripcion:lic.Nombre||'',fuente:'MercadoPublico'
     }));
   }else{
     console.log('[Frontend] Usando demo data');
