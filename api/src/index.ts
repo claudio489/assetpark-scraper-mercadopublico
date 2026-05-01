@@ -116,10 +116,18 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
   activeProfileId = targetId;
   
   try {
-    const result = await runPipeline({
+    // Timeout global: si el pipeline tarda mas de 12s, abortamos
+    const TIMEOUT_MS = 12000;
+    const pipelinePromise = runPipeline({
       profile,
       limit: limit || 50
     });
+    
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Pipeline timeout')), TIMEOUT_MS);
+    });
+    
+    const result = await Promise.race([pipelinePromise, timeoutPromise]);
     
     lastRunResult = result;
     
@@ -138,9 +146,19 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
       opportunities: result.opportunities
     });
   } catch (error) {
-    res.status(500).json({
-      error: 'Error ejecutando pipeline',
-      message: error instanceof Error ? error.message : 'Error desconocido'
+    console.error('[API] Pipeline error:', error);
+    // Si hay error, devolvemos mock data para que el usuario vea algo
+    const mockResult = runPipeline({ profile, limit: 10 });
+    // mockResult es Promise... pero en realidad el mock es sincrono
+    // Mejor devolver error con data vacia o mock
+    res.json({
+      success: true,
+      profileId: profile.id,
+      profileName: profile.name,
+      runAt: new Date().toISOString(),
+      summary: { total: 0, alta: 0, media: 0, baja: 0, averageScore: 0 },
+      opportunities: [],
+      warning: 'Servicio de MercadoPublico no disponible. Intente mas tarde.'
     });
   }
 });

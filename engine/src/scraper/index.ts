@@ -10,15 +10,20 @@ import * as https from 'https';
 const TICKET = '8BBCAB7E-0911-4E40-BD68-C56A0A33FF78';
 const API_BASE = 'https://api.mercadopublico.cl/servicios/v1/publico';
 
-function httpGet(url: string): Promise<any> {
+function httpGet(url: string, timeoutMs = 10000): Promise<any> {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
+    const req = https.get(url, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve(JSON.parse(data)); } catch { reject(new Error('JSON invalido')); }
       });
-    }).on('error', reject).setTimeout(25000, () => reject(new Error('Timeout')));
+    });
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      reject(new Error('Timeout'));
+    });
   });
 }
 

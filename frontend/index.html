@@ -275,12 +275,19 @@
       document.getElementById('error-box').classList.add('hidden');
       try {
         const run = await apiPost('/opportunities/run', { profileId: state.activeProfileId });
-        if (run.success) { state.opportunities = run.opportunities || []; }
+        if (run.success) { 
+          state.opportunities = run.opportunities || []; 
+          if (run.warning) {
+            state.error = run.warning;
+            document.getElementById('error-box').textContent = 'Aviso: ' + run.warning;
+            document.getElementById('error-box').classList.remove('hidden');
+          }
+        }
         const s = await apiGet('/opportunities/stats');
         if (s.success) state.stats = s.stats;
         renderDashboard(); renderTable();
-      } catch(e) { state.error = e.message; document.getElementById('error-box').textContent = 'Error: ' + e.message; document.getElementById('error-box').classList.remove('hidden'); }
-      finally { state.loading = false; document.getElementById('btn-run').disabled = false; document.getElementById('btn-spinner').classList.add('hidden'); document.getElementById('btn-text').textContent = '⟳ Ejecutar Pipeline'; }
+      } catch(e) { state.error = e.message; state.opportunities = []; document.getElementById('error-box').textContent = 'Error: ' + e.message + '. Intenta recargar la pagina.'; document.getElementById('error-box').classList.remove('hidden'); renderDashboard(); renderTable(); }
+      finally { state.loading = false; document.getElementById('btn-run').disabled = false; document.getElementById('btn-spinner').classList.add('hidden'); document.getElementById('btn-text').textContent = 'Ejecutar Pipeline'; }
     }
 
     function changeProfile(id) { state.activeProfileId = id; runPipeline(); }
