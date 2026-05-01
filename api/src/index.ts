@@ -93,7 +93,7 @@ async function scrapeMercadoPublico(profileKeywords: string[], limit = 20): Prom
         closingDate: (fechas.FechaCierre || lic.FechaCierre || '').split('T')[0],
         status: lic.Estado || 'Publicada',
         category: lic.Tipo || 'General',
-        url: `https://www.mercadopublico.cl/BuscarLicitacion/Home/FichaLicitacion/?codigo=${encodeURIComponent(lic.CodigoExterno || '')}`,
+        url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion='')}`,
         source: 'MercadoPublico'
       };
     });

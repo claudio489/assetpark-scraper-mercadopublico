@@ -59,7 +59,7 @@ function mapListItemToOpportunity(lic: any): RawOpportunity {
     fecha_cierre: fechaCierre,
     estado: lic.Estado || (lic.CodigoEstado === 5 ? 'Publicada' : 'Cerrada'),
     categoria: lic.Tipo || 'General',
-    url: `https://www.mercadopublico.cl/BuscarLicitacion/Home/Licitacion/${encodeURIComponent(lic.CodigoExterno || '')}`,
+    url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(lic.CodigoExterno || '')}`,
     descripcion: lic.Nombre || '',
     fuente: 'MercadoPublico'
   };
