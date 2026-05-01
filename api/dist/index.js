@@ -1,57 +1,57 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const app = (0, express_1.default)();
-app.use(express_1.default.json());
-// root
+const express = require("express");
+
+const app = express();
+
+app.use(express.json());
+
+// ROOT
 app.get("/", (req, res) => {
-    res.send("API OK");
+  res.send("API OK");
 });
-// health
+
+// HEALTH
 app.get("/api/health", (req, res) => {
-    res.json({ ok: true });
+  res.json({ ok: true });
 });
-// 👉 TEST endpoint (simula pipeline)
-app.post("/api/opportunities/run", async (req, res) => {
-    try {
-        // simulado por ahora
-        const data = [
-            {
-                id: "TEST-1",
-                title: "Mantención HVAC hospital",
-                entity: "MINSAL",
-                region: "Biobío",
-                amount: 45000000,
-                score: 75,
-                priority: "alta"
-            },
-            {
-                id: "TEST-2",
-                title: "Construcción sala eléctrica",
-                entity: "CODELCO",
-                region: "Antofagasta",
-                amount: 120000000,
-                score: 85,
-                priority: "alta"
-            }
-        ];
-        res.json({
-            ok: true,
-            count: data.length,
-            data
-        });
-    }
-    catch (err) {
-        res.status(500).json({
-            ok: false,
-            error: err.message
-        });
-    }
+
+// RUN (POST)
+app.post("/api/opportunities/run", (req, res) => {
+  res.json({
+    ok: true,
+    message: "RUN OK",
+    count: 1,
+    data: [
+      {
+        id: "TEST-1",
+        title: "Licitacion de prueba",
+        entity: "MINSAL",
+        region: "Biobio",
+        amount: 50000000,
+        score: 80,
+        priority: "alta"
+      }
+    ]
+  });
 });
+
+// RUN (GET para navegador)
+app.get("/api/opportunities/run", (req, res) => {
+  res.json({
+    ok: true,
+    message: "RUN OK GET",
+    count: 1,
+    data: [
+      {
+        id: "TEST-1",
+        title: "Licitacion de prueba",
+        score: 80
+      }
+    ]
+  });
+});
+
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 10000;
+
 app.listen(PORT, "0.0.0.0", () => {
-    console.log("API corriendo en puerto " + PORT);
+  console.log("API corriendo en puerto " + PORT);
 });
