@@ -1,0 +1,5 @@
+Version: v2025-buceo
+Fechas: LIC-2025-XXX (todas las licitaciones actualizadas a 2025)
+Perfiles: constructora, tecnologia, salud, general, buceo
+Perfil default: buceo
+Cambios: Fechas de cierre junio-septiembre 2025, perfil de importacion equipo de buceo agregado

@@ -1,0 +1,15 @@
+{
+  "name": "@licitaciones/engine",
+  "version": "1.0.0",
+  "description": "Motor de inteligencia de licitaciones - lógica pura",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.10.0"
+  }
+}
