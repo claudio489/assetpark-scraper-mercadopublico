@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // SCRAPER - MercadoPublico.cl - Version optimizada
 // Usa lista basica (1 llamada rapida) en vez de detalle por item (50 llamadas lentas)
 // Token: 8BBCAB7E-0911-4E40-BD68-C56A0A33FF78
@@ -59,7 +59,7 @@ function mapListItemToOpportunity(lic: any): RawOpportunity {
     fecha_cierre: fechaCierre,
     estado: lic.Estado || (lic.CodigoEstado === 5 ? 'Publicada' : 'Cerrada'),
     categoria: lic.Tipo || 'General',
-    url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(lic.CodigoExterno || '')}`,
+    url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/fichaLicitacion.html?idLicitacion=${encodeURIComponent(lic.CodigoExterno || '')}`,
     descripcion: lic.Nombre || '',
     fuente: 'MercadoPublico'
   };
@@ -140,3 +140,4 @@ export async function scrapeOpportunities(options?: { sources?: string[]; limit?
 export function registerSource(_name: string, _fetcher: () => Promise<RawOpportunity[]>): void {
   // placeholder
 }
+

@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // API - Backend proxy para AssetPark Scraper
 // Scrapea MercadoPublico.cl y devuelve datos enriquecidos
 // ==========================================
@@ -20,11 +20,11 @@ const MP_API = 'https://api.mercadopublico.cl/servicios/v1/publico';
 // ==========================================
 const PROFILES = [
   { id: 'constructora', name: 'Constructora / Obras Civiles', keywords: ['construccion','obra civil','obra publica','infraestructura','edificacion','puente','camino','pavimentacion','hormigon','asfalto','movimiento de tierra','demolicion','excavacion','terraplen','estructura'], excluded: ['oficina','mueble','computador','impresora','papeleria'] },
-  { id: 'tecnologia', name: 'Tecnología / Software / TI', keywords: ['software','desarrollo software','sistema informatico','plataforma digital','aplicacion movil','ciberseguridad','hosting cloud','data center','red de datos','telecomunicaciones'], excluded: ['construccion','hormigon','asfalto','medico','hospital'] },
-  { id: 'salud', name: 'Salud / Insumos Médicos', keywords: ['insumos medicos','equipamiento medico','medicamentos','material de curacion','material esteril','instrumental quirurgico','equipo de rayos x','tomografo','resonancia magnetica'], excluded: ['oficina','papeleria','computador','mueble','limpieza'] },
-  { id: 'imprenta', name: 'Imprenta / Gráfica / Publicidad', keywords: ['imprenta','impresion offset','impresion digital','pendon pvc','banner publicitario','gigantografia','letrero luminoso','rotulacion vehicular','troquelado','corte laser','vinilo de corte','serigrafia'], excluded: ['medico','hospital','insumos medicos','quirurgico'] },
+  { id: 'tecnologia', name: 'TecnologÃ­a / Software / TI', keywords: ['software','desarrollo software','sistema informatico','plataforma digital','aplicacion movil','ciberseguridad','hosting cloud','data center','red de datos','telecomunicaciones'], excluded: ['construccion','hormigon','asfalto','medico','hospital'] },
+  { id: 'salud', name: 'Salud / Insumos MÃ©dicos', keywords: ['insumos medicos','equipamiento medico','medicamentos','material de curacion','material esteril','instrumental quirurgico','equipo de rayos x','tomografo','resonancia magnetica'], excluded: ['oficina','papeleria','computador','mueble','limpieza'] },
+  { id: 'imprenta', name: 'Imprenta / GrÃ¡fica / Publicidad', keywords: ['imprenta','impresion offset','impresion digital','pendon pvc','banner publicitario','gigantografia','letrero luminoso','rotulacion vehicular','troquelado','corte laser','vinilo de corte','serigrafia'], excluded: ['medico','hospital','insumos medicos','quirurgico'] },
   { id: 'general', name: 'Perfil General', keywords: [], excluded: [] },
-  { id: 'buceo', name: 'Importación Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','buceo tecnico','equipo de buceo','tanque de buceo','regulador de buceo','traje de buceo','mascara de buceo','aletas de buceo','buceo profesional','buceo industrial','escafandra autonoma'], excluded: ['medico','hospital','insumos medicos','paciente','quirurgico'] }
+  { id: 'buceo', name: 'ImportaciÃ³n Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','buceo tecnico','equipo de buceo','tanque de buceo','regulador de buceo','traje de buceo','mascara de buceo','aletas de buceo','buceo profesional','buceo industrial','escafandra autonoma'], excluded: ['medico','hospital','insumos medicos','paciente','quirurgico'] }
 ];
 
 // ==========================================
@@ -56,7 +56,7 @@ function fmtAmount(amount: number): string {
 }
 
 // ==========================================
-// SCRAPER - Lista básica de MercadoPublico
+// SCRAPER - Lista bÃ¡sica de MercadoPublico
 // ==========================================
 async function scrapeMercadoPublico(profileKeywords: string[], excludedKeywords: string[] = [], limit = 20): Promise<any[]> {
   try {
@@ -107,7 +107,7 @@ async function scrapeMercadoPublico(profileKeywords: string[], excludedKeywords:
         closingDate: (fechas.FechaCierre || lic.FechaCierre || '').split('T')[0],
         status: lic.Estado || 'Publicada',
         category: lic.Tipo || 'General',
-        url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(lic.CodigoExterno || '')}`,
+        url: `https://www.mercadopublico.cl/Procurement/Modules/RFB/fichaLicitacion.html?idLicitacion=${encodeURIComponent(lic.CodigoExterno || '')}`,
         source: 'MercadoPublico'
       };
     });
@@ -159,13 +159,13 @@ function calculateBusinessScore(amount: number, profileId: string): { score: num
   let score = 50;
 
   if (amount === 0) {
-    reasons.push('Monto no visible (licitación activa)');
+    reasons.push('Monto no visible (licitaciÃ³n activa)');
     score = 40;
   } else if (amount < criteria.minAmount) {
-    reasons.push(`Monto ${fmtMoney(amount)} está por debajo del mínimo operativo ${fmtMoney(criteria.minAmount)} para este rubro`);
+    reasons.push(`Monto ${fmtMoney(amount)} estÃ¡ por debajo del mÃ­nimo operativo ${fmtMoney(criteria.minAmount)} para este rubro`);
     score = 15;
   } else if (amount >= criteria.optimalAmount) {
-    reasons.push(`Monto ${fmtMoney(amount)} supera el óptimo ${fmtMoney(criteria.optimalAmount)}`);
+    reasons.push(`Monto ${fmtMoney(amount)} supera el Ã³ptimo ${fmtMoney(criteria.optimalAmount)}`);
     score = 95;
   } else {
     const ratio = (amount - criteria.minAmount) / (criteria.optimalAmount - criteria.minAmount);
@@ -186,7 +186,7 @@ function fmtMoney(n: number): string {
 // PORTFOLIO (in-memory)
 // ==================================================
 const portfolio = new Map<string, any>();
-const PORTFOLIO_CATEGORIES = ['Construcción', 'Montaje', 'Mantención', 'Suministro EPP', 'Software a la medida'];
+const PORTFOLIO_CATEGORIES = ['ConstrucciÃ³n', 'Montaje', 'MantenciÃ³n', 'Suministro EPP', 'Software a la medida'];
 
 function scoreToPriority(score: number): string {
   if (score >= 80) return 'alta';
@@ -246,7 +246,7 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
       const baseSc = calculateScore(op.title, op.description, profile.keywords);
       const bizSc = calculateBusinessScore(op.amount, profile.id);
       
-      // Ponderación: 50% base + 50% negocio
+      // PonderaciÃ³n: 50% base + 50% negocio
       const finalScore = Math.round(baseSc.score * 0.50 + bizSc.score * 0.50);
       
       let recommendation: string;
@@ -312,7 +312,7 @@ app.get('/api/opportunities/stats', (_req: Request, res: Response) => {
   for (const op of ops) {
     if (op.amount > 0) {
       totalAmount += op.amount;
-      const cat = op.category || 'Sin categoría';
+      const cat = op.category || 'Sin categorÃ­a';
       amountsByCategory[cat] = (amountsByCategory[cat] || 0) + op.amount;
     }
   }
@@ -355,7 +355,7 @@ app.get('/api/portfolio/stats', (_req: Request, res: Response) => {
 app.post('/api/portfolio', (req: Request, res: Response) => {
   const { opportunity, category, notes, profileId, profileName } = req.body || {};
   if (!opportunity || !opportunity.id) { res.status(400).json({ error: 'Falta opportunity.id' }); return; }
-  const validCat = PORTFOLIO_CATEGORIES.includes(category) ? category : 'Sin categoría';
+  const validCat = PORTFOLIO_CATEGORIES.includes(category) ? category : 'Sin categorÃ­a';
   const item = {
     id: `${opportunity.id}-${Date.now()}`,
     opportunityId: opportunity.id,
@@ -426,6 +426,7 @@ app.get('*', (_req: Request, res: Response) => {
 // START
 // ==========================================
 app.listen(PORT, () => {
-  console.log(`🚀 AssetPark API en puerto ${PORT}`);
-  console.log(`📋 /api/health | /api/health/external | /api/profiles | /api/opportunities/run | /api/portfolio/*`);
+  console.log(`ðŸš€ AssetPark API en puerto ${PORT}`);
+  console.log(`ðŸ“‹ /api/health | /api/health/external | /api/profiles | /api/opportunities/run | /api/portfolio/*`);
 });
+
