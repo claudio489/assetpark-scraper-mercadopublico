@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // API REST - Licitaciones Intelligence
 // Endpoints simples, sin auth, sin tRPC, sin sesiones
 // ==========================================
@@ -15,13 +15,13 @@ import {
 } from '../../engine/dist';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Cache en memoria de la última ejecución
+// Cache en memoria de la Ãºltima ejecuciÃ³n
 let lastRunResult: PipelineResult | null = null;
 let activeProfileId = 'tecnologia';
 
@@ -31,7 +31,7 @@ let activeProfileId = 'tecnologia';
 
 /**
  * GET /api/opportunities
- * Retorna las licitaciones enriquecidas de la última ejecución
+ * Retorna las licitaciones enriquecidas de la Ãºltima ejecuciÃ³n
  * Query params: ?profileId=string&priority=alta|media|baja
  */
 app.get('/api/opportunities', (req: Request, res: Response) => {
@@ -68,7 +68,7 @@ app.get('/api/opportunities', (req: Request, res: Response) => {
 
 /**
  * GET /api/opportunities/stats
- * Calcula estadísticas desde el array de oportunidades (misma fuente)
+ * Calcula estadÃ­sticas desde el array de oportunidades (misma fuente)
  */
 app.get('/api/opportunities/stats', (req: Request, res: Response) => {
   if (!lastRunResult) {
@@ -88,7 +88,7 @@ app.get('/api/opportunities/stats', (req: Request, res: Response) => {
 
 /**
  * POST /api/opportunities/run
- * Ejecuta el pipeline completo: scrape → normalize → score
+ * Ejecuta el pipeline completo: scrape â†’ normalize â†’ score
  * Body opcional: { profileId: string }
  */
 app.post('/api/opportunities/run', async (req: Request, res: Response) => {
@@ -184,9 +184,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // ==========================================
 
 export function startServer(): void {
-  app.listen(PORT, () => {
-    console.log(`🚀 Licitaciones API corriendo en http://localhost:${PORT}`);
-    console.log(`📋 Endpoints disponibles:`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`ðŸš€ Licitaciones API corriendo en http://localhost:${PORT}`);
+    console.log(`ðŸ“‹ Endpoints disponibles:`);
     console.log(`   GET  /api/health`);
     console.log(`   GET  /api/profiles`);
     console.log(`   POST /api/profiles`);

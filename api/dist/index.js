@@ -14,11 +14,11 @@ const cors_1 = __importDefault(require("cors"));
 const dist_1 = require("../../engine/dist");
 const app = (0, express_1.default)();
 exports.app = app;
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 // Middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
-// Cache en memoria de la última ejecución
+// Cache en memoria de la Ãºltima ejecuciÃ³n
 let lastRunResult = null;
 let activeProfileId = 'tecnologia';
 // ==========================================
@@ -26,7 +26,7 @@ let activeProfileId = 'tecnologia';
 // ==========================================
 /**
  * GET /api/opportunities
- * Retorna las licitaciones enriquecidas de la última ejecución
+ * Retorna las licitaciones enriquecidas de la Ãºltima ejecuciÃ³n
  * Query params: ?profileId=string&priority=alta|media|baja
  */
 app.get('/api/opportunities', (req, res) => {
@@ -56,7 +56,7 @@ app.get('/api/opportunities', (req, res) => {
 });
 /**
  * GET /api/opportunities/stats
- * Calcula estadísticas desde el array de oportunidades (misma fuente)
+ * Calcula estadÃ­sticas desde el array de oportunidades (misma fuente)
  */
 app.get('/api/opportunities/stats', (req, res) => {
     if (!lastRunResult) {
@@ -73,7 +73,7 @@ app.get('/api/opportunities/stats', (req, res) => {
 });
 /**
  * POST /api/opportunities/run
- * Ejecuta el pipeline completo: scrape → normalize → score
+ * Ejecuta el pipeline completo: scrape â†’ normalize â†’ score
  * Body opcional: { profileId: string }
  */
 app.post('/api/opportunities/run', async (req, res) => {
@@ -157,9 +157,9 @@ app.get('/api/health', (_req, res) => {
 // START
 // ==========================================
 function startServer() {
-    app.listen(PORT, () => {
-        console.log(`🚀 Licitaciones API corriendo en http://localhost:${PORT}`);
-        console.log(`📋 Endpoints disponibles:`);
+    app.listen(PORT, "0.0.0.0", () => {
+        console.log(`ðŸš€ Licitaciones API corriendo en http://localhost:${PORT}`);
+        console.log(`ðŸ“‹ Endpoints disponibles:`);
         console.log(`   GET  /api/health`);
         console.log(`   GET  /api/profiles`);
         console.log(`   POST /api/profiles`);
