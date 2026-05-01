@@ -1,4 +1,7 @@
+require("dotenv").config();
+
 const express = require("express");
+const { scrapeOpportunities } = require("../engine/dist/scraper");
 
 const app = express();
 
@@ -9,35 +12,29 @@ app.get("/", (req, res) => {
   res.send("API OK");
 });
 
-// HEALTH
-app.get("/api/health", (req, res) => {
-  res.json({ ok: true });
+// DEBUG
+console.log("API_KEY:", process.env.MP_API_KEY);
+
+// RUN
+app.get("/api/opportunities/run", async (req, res) => {
+  try {
+    const data = await scrapeOpportunities();
+
+    res.json({
+      ok: true,
+      count: data.length,
+      data
+    });
+  } catch (e) {
+    res.json({
+      ok: false,
+      error: e.message
+    });
+  }
 });
 
-// RUN GET (para navegador)
-app.get("/api/opportunities/run", (req, res) => {
-  res.json({
-    ok: true,
-    message: "RUN OK (GET)",
-    data: [
-      { id: "TEST-1", title: "Licitación prueba", score: 80 }
-    ]
-  });
-});
-
-// RUN POST
-app.post("/api/opportunities/run", (req, res) => {
-  res.json({
-    ok: true,
-    message: "RUN OK (POST)",
-    data: [
-      { id: "TEST-1", title: "Licitación prueba", score: 80 }
-    ]
-  });
-});
-
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 10000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("Server corriendo en puerto " + PORT);
+  console.log("API corriendo en puerto " + PORT);
 });
