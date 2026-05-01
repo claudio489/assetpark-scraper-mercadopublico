@@ -1,292 +1,260 @@
 // ==========================================
-// API REST - Licitaciones Intelligence
-// Endpoints simples, sin auth, sin tRPC, sin sesiones
+// API - Backend proxy para AssetPark Scraper
+// Scrapea MercadoPublico.cl y devuelve datos enriquecidos
 // ==========================================
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import {
-  runPipeline,
-  calculateStats,
-  getProfile,
-  listProfiles,
-  saveProfile,
-  PipelineResult,
-  PortfolioItem,
-  PortfolioCategory,
-  PORTFOLIO_CATEGORIES
-} from '../../engine/dist';
+import path from 'path';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Middleware
-app.use(cors({ origin: true, credentials: false }));
+app.use(cors());
 app.use(express.json());
 
-// Servir frontend estático en producción
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('../frontend/dist'));
+const PORT = process.env.PORT || 3001;
+const TICKET = process.env.MP_TICKET || '8BBCAB7E-0911-4E40-BD68-C56A0A33FF78';
+const MP_API = 'https://api.mercadopublico.cl/servicios/v1/publico';
+
+// ==========================================
+// PROFILES
+// ==========================================
+const PROFILES = [
+  { id: 'buceo', name: 'Importación Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','equipo de buceo'] },
+  { id: 'constructora', name: 'Constructora / Obras Civiles', keywords: ['construccion','obra','infraestructura','edificacion','puente','pavimentacion'] },
+  { id: 'tecnologia', name: 'Tecnología / Software / TI', keywords: ['software','tecnologia','sistema','desarrollo','programacion','ciberseguridad'] },
+  { id: 'salud', name: 'Salud / Insumos Médicos', keywords: ['salud','hospital','insumos medicos','medicamentos','equipamiento medico'] },
+  { id: 'general', name: 'Perfil General', keywords: [] },
+  { id: 'imprenta', name: 'Imprenta / Gráfica / Publicidad', keywords: ['imprenta','impresion','pvc','banner','gigantografia','letrero','autoadhesivo','troquelado','offset','digital'] }
+];
+
+// ==========================================
+// UTILS - HTTP con timeout
+// ==========================================
+function httpGet(url: string, timeoutMs = 20000): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const https = require('https');
+    const req = https.get(url, { headers: { 'User-Agent': 'AssetPark-Scraper/1.0' } }, (res: any) => {
+      let data = '';
+      res.on('data', (chunk: any) => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch (e) { reject(new Error('JSON invalido')); }
+      });
+    });
+    req.on('error', (e: any) => reject(e));
+    req.setTimeout(timeoutMs, () => { req.destroy(); reject(new Error('Timeout HTTP')); });
+  });
 }
 
-// Cache en memoria de la última ejecución
-let lastRunResult: PipelineResult | null = null;
-let activeProfileId = 'buceo';
+function parseRegion(regionRaw: string | undefined): string {
+  if (!regionRaw) return 'No especificada';
+  return regionRaw.replace(/^Region\s*/i, '').replace(/^del?\s*/i, '').replace(/^de\s*/i, '').trim();
+}
+
+function fmtAmount(amount: number): string {
+  if (!amount || amount <= 0) return 'No disp.';
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
+}
+
+// ==========================================
+// SCRAPER - Lista básica de MercadoPublico
+// ==========================================
+async function scrapeMercadoPublico(profileKeywords: string[], limit = 20): Promise<any[]> {
+  try {
+    const url = `${MP_API}/licitaciones.json?estado=activas&ticket=${TICKET}`;
+    const data = await httpGet(url, 20000);
+    
+    if (!data.Listado || !Array.isArray(data.Listado) || data.Listado.length === 0) {
+      console.log('[Scraper] API vacia');
+      return [];
+    }
+    
+    let list = data.Listado;
+    
+    // Filtrar por keywords
+    if (profileKeywords.length > 0) {
+      const kw = profileKeywords.map(k => k.toLowerCase());
+      list = list.filter((lic: any) => {
+        const text = `${lic.Nombre || ''} ${lic.Descripcion || ''}`.toLowerCase();
+        return kw.some(w => text.includes(w));
+      });
+    }
+    
+    return list.slice(0, limit).map((lic: any) => {
+      const comprador = lic.Comprador || {};
+      const fechas = lic.Fechas || {};
+      return {
+        id: lic.CodigoExterno || '',
+        title: lic.Nombre || '',
+        description: lic.Nombre || '',
+        entity: comprador.NombreOrganismo || comprador.NombreUnidad || 'Organismo no especificado',
+        region: parseRegion(comprador.RegionUnidad),
+        amount: typeof lic.MontoEstimado === 'number' ? lic.MontoEstimado : 0,
+        date: (fechas.FechaPublicacion || '').split('T')[0],
+        closingDate: (fechas.FechaCierre || lic.FechaCierre || '').split('T')[0],
+        status: lic.Estado || 'Publicada',
+        category: lic.Tipo || 'General',
+        url: `https://www.mercadopublico.cl/BuscarLicitacion/Home/Licitacion/${encodeURIComponent(lic.CodigoExterno || '')}`,
+        source: 'MercadoPublico'
+      };
+    });
+  } catch (err) {
+    console.log('[Scraper] Error:', (err as Error).message);
+    return [];
+  }
+}
+
+// ==========================================
+// SCORING
+// ==========================================
+function calculateScore(title: string, description: string, keywords: string[]) {
+  const text = (title + ' ' + description).toLowerCase();
+  const matched: string[] = [];
+  let score = 0;
+  for (const k of keywords) {
+    if (text.includes(k.toLowerCase())) {
+      matched.push(k);
+      score += 3;
+    }
+  }
+  score = Math.min(100, score);
+  const priority = score >= 80 ? 'alta' : score >= 60 ? 'media' : 'baja';
+  return { score, priority, matchedKeywords: matched, matchScore: score };
+}
+
+// ==========================================
+// PORTFOLIO (in-memory)
+// ==========================================
+const portfolio = new Map<string, any>();
+const PORTFOLIO_CATEGORIES = ['Construcción', 'Montaje', 'Mantención', 'Suministro EPP', 'Software a la medida'];
+
+function scoreToPriority(score: number): string {
+  if (score >= 80) return 'alta';
+  if (score >= 60) return 'media';
+  return 'baja';
+}
 
 // ==========================================
 // ENDPOINTS
 // ==========================================
 
-/**
- * GET /api/opportunities
- * Retorna las licitaciones enriquecidas de la última ejecución
- * Query params: ?profileId=string&priority=alta|media|baja
- */
-app.get('/api/opportunities', (req: Request, res: Response) => {
-  const { profileId, priority } = req.query;
-  
-  const targetProfile = profileId
-    ? getProfile(profileId as string)
-    : getProfile(activeProfileId);
-  
-  if (!lastRunResult && !targetProfile) {
-    res.status(400).json({ error: 'No hay datos. Ejecute POST /api/opportunities/run primero.' });
-    return;
-  }
-  
-  let opportunities = lastRunResult?.opportunities || [];
-  
-  // Si se solicita un profile diferente, regenerar
-  if (targetProfile && (!lastRunResult || lastRunResult.profileId !== targetProfile.id)) {
-    res.status(400).json({ error: 'Profile no ejecutado. Use POST /api/opportunities/run' });
-    return;
-  }
-  
-  if (priority && typeof priority === 'string') {
-    opportunities = opportunities.filter(o => o.priority === priority);
-  }
-  
-  res.json({
-    success: true,
-    count: opportunities.length,
-    profileId: activeProfileId,
-    opportunities
-  });
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', service: 'assetpark-scraper', version: '3.1.0' });
 });
 
-/**
- * GET /api/opportunities/stats
- * Calcula estadísticas desde el array de oportunidades (misma fuente)
- */
-app.get('/api/opportunities/stats', (req: Request, res: Response) => {
-  if (!lastRunResult) {
-    res.status(400).json({ error: 'No hay datos. Ejecute POST /api/opportunities/run primero.' });
-    return;
+app.get('/api/health/external', async (_req: Request, res: Response) => {
+  try {
+    const data = await httpGet(`${MP_API}/licitaciones.json?estado=activas&ticket=${TICKET}`, 10000);
+    const count = data.Listado?.length || 0;
+    res.json({ success: true, mercadoPublico: true, count, message: `Conectado - ${count} activas` });
+  } catch (err) {
+    res.json({ success: false, mercadoPublico: false, message: (err as Error).message });
   }
-  
-  const stats = calculateStats(lastRunResult.opportunities);
-  
-  res.json({
-    success: true,
-    profileId: lastRunResult.profileId,
-    runAt: lastRunResult.runAt,
-    stats
-  });
 });
 
-/**
- * POST /api/opportunities/run
- * Ejecuta el pipeline completo: scrape → normalize → score
- * Body opcional: { profileId: string }
- */
+app.get('/api/profiles', (_req: Request, res: Response) => {
+  res.json({ success: true, profiles: PROFILES });
+});
+
+app.get('/api/profile/:id', (req: Request, res: Response) => {
+  const p = PROFILES.find(x => x.id === req.params.id);
+  if (!p) { res.status(404).json({ error: 'No encontrado' }); return; }
+  res.json({ success: true, profile: p });
+});
+
+// ---- PIPELINE ----
+
+let lastResult: any = null;
+
 app.post('/api/opportunities/run', async (req: Request, res: Response) => {
-  const { profileId, limit } = req.body || {};
+  const { profileId = 'general', limit = 20 } = req.body || {};
+  const profile = PROFILES.find(p => p.id === profileId) || PROFILES[4];
   
-  const targetId = profileId || activeProfileId;
-  const profile = getProfile(targetId);
-  
-  if (!profile) {
-    res.status(404).json({
-      error: `Profile '${targetId}' no encontrado`,
-      availableProfiles: listProfiles().map(p => ({ id: p.id, name: p.name }))
-    });
-    return;
-  }
-  
-  activeProfileId = targetId;
+  console.log(`[API] Pipeline iniciado - perfil: ${profile.id}`);
   
   try {
-    // Timeout global: si el pipeline tarda mas de 12s, abortamos
-    const TIMEOUT_MS = 12000;
-    const pipelinePromise = runPipeline({
-      profile,
-      limit: limit || 50
-    });
-    
+    // Timeout global de 30 segundos
+    const pipelinePromise = scrapeMercadoPublico(profile.keywords, limit);
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Pipeline timeout')), TIMEOUT_MS);
+      setTimeout(() => reject(new Error('Pipeline timeout')), 30000);
     });
     
-    const result = await Promise.race([pipelinePromise, timeoutPromise]);
+    const raw = await Promise.race([pipelinePromise, timeoutPromise]);
     
-    lastRunResult = result;
-    
-    res.json({
-      success: true,
-      profileId: profile.id,
-      profileName: profile.name,
-      runAt: result.runAt,
-      summary: {
-        total: result.total,
-        alta: result.alta,
-        media: result.media,
-        baja: result.baja,
-        averageScore: result.averageScore
-      },
-      opportunities: result.opportunities
+    // Scoring
+    const opportunities = raw.map((op: any) => {
+      const sc = calculateScore(op.title, op.description, profile.keywords);
+      return { ...op, score: sc.score || 50, priority: sc.priority, matchScore: sc.matchScore, matchedKeywords: sc.matchedKeywords };
     });
+    
+    const stats = {
+      total: opportunities.length,
+      alta: opportunities.filter((o: any) => o.priority === 'alta').length,
+      media: opportunities.filter((o: any) => o.priority === 'media').length,
+      baja: opportunities.filter((o: any) => o.priority === 'baja').length,
+      averageScore: opportunities.length > 0 ? Math.round(opportunities.reduce((s: number, o: any) => s + o.score, 0) / opportunities.length) : 0
+    };
+    
+    lastResult = { profileId, runAt: new Date().toISOString(), stats, opportunities };
+    
+    res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities });
+    console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades`);
+    
   } catch (error) {
-    console.error('[API] Pipeline error:', error);
-    // Si hay error, devolvemos mock data para que el usuario vea algo
-    const mockResult = runPipeline({ profile, limit: 10 });
-    // mockResult es Promise... pero en realidad el mock es sincrono
-    // Mejor devolver error con data vacia o mock
+    console.error('[API] Pipeline error:', (error as Error).message);
+    // Devolver resultado vacio para que el frontend no se quede colgado
     res.json({
       success: true,
       profileId: profile.id,
       profileName: profile.name,
-      runAt: new Date().toISOString(),
-      summary: { total: 0, alta: 0, media: 0, baja: 0, averageScore: 0 },
+      total: 0, alta: 0, media: 0, baja: 0, averageScore: 0,
       opportunities: [],
-      warning: 'Servicio de MercadoPublico no disponible. Intente mas tarde.'
+      warning: `Error: ${(error as Error).message}. MercadoPublico puede estar bloqueando requests desde cloud.`
     });
   }
 });
 
-/**
- * GET /api/profiles
- * Lista todos los perfiles disponibles
- */
-app.get('/api/profiles', (_req: Request, res: Response) => {
-  const profiles = listProfiles();
-  res.json({
-    success: true,
-    count: profiles.length,
-    profiles: profiles.map(p => ({
-      id: p.id,
-      name: p.name,
-      rubros: p.rubros,
-      keywords: p.keywords,
-      regions: p.regions
-    }))
-  });
-});
-
-/**
- * POST /api/profiles
- * Crea o actualiza un perfil
- */
-app.post('/api/profiles', (req: Request, res: Response) => {
-  const profile = req.body;
-  
-  if (!profile.id || !profile.name) {
-    res.status(400).json({ error: 'Se requiere id y name' });
+app.get('/api/opportunities', (_req: Request, res: Response) => {
+  if (!lastResult) {
+    res.json({ success: true, count: 0, opportunities: [], warning: 'Ejecute POST /api/opportunities/run primero' });
     return;
   }
-  
-  const saved = saveProfile(profile);
-  res.json({ success: true, profile: saved });
+  res.json({ success: true, count: lastResult.opportunities.length, profileId: lastResult.profileId, opportunities: lastResult.opportunities });
 });
 
-/**
- * Health check
- */
-app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'licitaciones-intelligence-api', version: '2.0.0' });
+app.get('/api/opportunities/stats', (_req: Request, res: Response) => {
+  if (!lastResult) {
+    res.json({ success: true, stats: { total: 0, alta: 0, media: 0, baja: 0, averageScore: 0 } });
+    return;
+  }
+  res.json({ success: true, stats: lastResult.stats });
 });
 
-// Servir frontend estático siempre
-app.use(express.static('../frontend'));
-app.get('*', (_req, res) => {
-  res.sendFile('index.html', { root: '../frontend' });
-});
+// ---- PORTFOLIO ----
 
-// ==========================================
-// PORTFOLIO - Guardar licitaciones para postulación
-// ==========================================
-
-const portfolio = new Map<string, PortfolioItem>();
-
-/**
- * GET /api/portfolio
- * Lista todas las licitaciones guardadas
- * Query: ?category=Construcción|Montaje|...&profileId=xxx para filtrar
- */
 app.get('/api/portfolio', (req: Request, res: Response) => {
   const { category, profileId } = req.query;
-  let items = Array.from(portfolio.values()).sort(
-    (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
-  );
-  
-  if (category && typeof category === 'string') {
-    items = items.filter(i => i.category === category);
-  }
-  
-  if (profileId && typeof profileId === 'string') {
-    items = items.filter(i => i.profileId === profileId);
-  }
-  
-  res.json({
-    success: true,
-    count: items.length,
-    categories: PORTFOLIO_CATEGORIES,
-    items
-  });
+  let items = Array.from(portfolio.values()).sort((a: any, b: any) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+  if (category && typeof category === 'string') items = items.filter((i: any) => i.category === category);
+  if (profileId && typeof profileId === 'string') items = items.filter((i: any) => i.profileId === profileId);
+  res.json({ success: true, count: items.length, categories: PORTFOLIO_CATEGORIES, items });
 });
 
-/**
- * GET /api/portfolio/stats
- * Estadísticas del portfolio por categoría
- */
 app.get('/api/portfolio/stats', (_req: Request, res: Response) => {
   const items = Array.from(portfolio.values());
   const byCategory: Record<string, number> = {};
   const byPriority: Record<string, number> = {};
-  
   for (const item of items) {
     byCategory[item.category] = (byCategory[item.category] || 0) + 1;
     byPriority[item.priority] = (byPriority[item.priority] || 0) + 1;
   }
-  
-  res.json({
-    success: true,
-    total: items.length,
-    byCategory,
-    byPriority,
-    averageScore: items.length > 0
-      ? Math.round(items.reduce((s, i) => s + i.score, 0) / items.length)
-      : 0
-  });
+  res.json({ success: true, total: items.length, byCategory, byPriority, averageScore: items.length > 0 ? Math.round(items.reduce((s: number, i: any) => s + i.score, 0) / items.length) : 0 });
 });
 
-/**
- * POST /api/portfolio
- * Guarda una licitación en el portfolio
- * Body: { opportunity, category, notes?, profileId?, profileName? }
- */
 app.post('/api/portfolio', (req: Request, res: Response) => {
   const { opportunity, category, notes, profileId, profileName } = req.body || {};
-  
-  if (!opportunity || !opportunity.id) {
-    res.status(400).json({ error: 'Se requiere opportunity con id' });
-    return;
-  }
-  
-  const validCategory: PortfolioCategory = PORTFOLIO_CATEGORIES.includes(category)
-    ? category
-    : 'Sin categoría';
-  
-  const item: PortfolioItem = {
+  if (!opportunity || !opportunity.id) { res.status(400).json({ error: 'Falta opportunity.id' }); return; }
+  const validCat = PORTFOLIO_CATEGORIES.includes(category) ? category : 'Sin categoría';
+  const item = {
     id: `${opportunity.id}-${Date.now()}`,
     opportunityId: opportunity.id,
     title: opportunity.title || '',
@@ -296,196 +264,66 @@ app.post('/api/portfolio', (req: Request, res: Response) => {
     url: opportunity.url || '',
     date: opportunity.date || '',
     status: opportunity.status || '',
-    category: validCategory,
+    category: validCat,
     description: opportunity.description || '',
     score: opportunity.score || 50,
-    priority: opportunity.priority || 'media',
+    priority: scoreToPriority(opportunity.score || 50),
     matchedKeywords: opportunity.matchedKeywords || [],
     matchScore: opportunity.matchScore || 0,
-    aiScore: opportunity.aiScore,
     source: opportunity.source || '',
     savedAt: new Date().toISOString(),
     notes: notes || '',
     profileId: profileId || '',
     profileName: profileName || ''
   };
-  
   portfolio.set(item.id, item);
-  
-  res.json({
-    success: true,
-    message: 'Licitación guardada en portfolio',
-    item
-  });
+  res.json({ success: true, item });
 });
 
-/**
- * PUT /api/portfolio/:id/score
- * Actualiza el puntaje de una licitación guardada
- * Body: { score: number }
- */
 app.put('/api/portfolio/:id/score', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { score } = req.body || {};
-  
-  const item = portfolio.get(id);
-  if (!item) {
-    res.status(404).json({ error: 'Item no encontrado en portfolio' });
-    return;
-  }
-  
-  const newScore = typeof score === 'number' ? clampScore(score) : item.score;
-  const newPriority = scoreToPriority(newScore);
-  
-  const updated: PortfolioItem = {
-    ...item,
-    score: newScore,
-    priority: newPriority
-  };
-  
-  portfolio.set(id, updated);
-  
-  res.json({
-    success: true,
-    message: 'Puntaje actualizado',
-    item: updated
-  });
+  const item = portfolio.get(req.params.id);
+  if (!item) { res.status(404).json({ error: 'No encontrado' }); return; }
+  const ns = typeof req.body.score === 'number' ? Math.max(0, Math.min(100, req.body.score)) : item.score;
+  const updated = { ...item, score: ns, priority: scoreToPriority(ns) };
+  portfolio.set(req.params.id, updated);
+  res.json({ success: true, item: updated });
 });
 
-/**
- * PUT /api/portfolio/:id/category
- * Cambia la categoría de una licitación guardada
- * Body: { category: string }
- */
 app.put('/api/portfolio/:id/category', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { category } = req.body || {};
-  
-  const item = portfolio.get(id);
-  if (!item) {
-    res.status(404).json({ error: 'Item no encontrado en portfolio' });
-    return;
-  }
-  
-  const validCategory: PortfolioCategory = PORTFOLIO_CATEGORIES.includes(category)
-    ? category
-    : item.category;
-  
-  const updated: PortfolioItem = { ...item, category: validCategory };
-  portfolio.set(id, updated);
-  
-  res.json({
-    success: true,
-    message: 'Categoría actualizada',
-    item: updated
-  });
+  const item = portfolio.get(req.params.id);
+  if (!item) { res.status(404).json({ error: 'No encontrado' }); return; }
+  const validCat = PORTFOLIO_CATEGORIES.includes(req.body.category) ? req.body.category : item.category;
+  const updated = { ...item, category: validCat };
+  portfolio.set(req.params.id, updated);
+  res.json({ success: true, item: updated });
 });
 
-/**
- * PUT /api/portfolio/:id/notes
- * Actualiza notas de una licitación guardada
- * Body: { notes: string }
- */
-app.put('/api/portfolio/:id/notes', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { notes } = req.body || {};
-  
-  const item = portfolio.get(id);
-  if (!item) {
-    res.status(404).json({ error: 'Item no encontrado en portfolio' });
-    return;
-  }
-  
-  const updated: PortfolioItem = { ...item, notes: notes || '' };
-  portfolio.set(id, updated);
-  
-  res.json({
-    success: true,
-    message: 'Notas actualizadas',
-    item: updated
-  });
-});
-
-/**
- * DELETE /api/portfolio/:id
- * Elimina una licitación del portfolio
- */
-app.delete('/api/portfolio/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
-  
-  if (!portfolio.has(id)) {
-    res.status(404).json({ error: 'Item no encontrado' });
-    return;
-  }
-  
-  portfolio.delete(id);
-  
-  res.json({
-    success: true,
-    message: 'Licitación eliminada del portfolio'
-  });
-});
-
-function clampScore(score: number): number {
-  return Math.max(0, Math.min(100, score));
-}
-
-function scoreToPriority(score: number): 'alta' | 'media' | 'baja' {
-  if (score >= 80) return 'alta';
-  if (score >= 60) return 'media';
-  return 'baja';
-}
-
-/**
- * PUT /api/portfolio/:id/profile
- * Cambia el perfil asignado a una licitación guardada
- * Body: { profileId: string, profileName?: string }
- */
 app.put('/api/portfolio/:id/profile', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { profileId, profileName } = req.body || {};
-  
-  const item = portfolio.get(id);
-  if (!item) {
-    res.status(404).json({ error: 'Item no encontrado en portfolio' });
-    return;
-  }
-  
-  const updated: PortfolioItem = {
-    ...item,
-    profileId: typeof profileId === 'string' ? profileId : item.profileId,
-    profileName: typeof profileName === 'string' ? profileName : item.profileName
-  };
-  portfolio.set(id, updated);
-  
-  res.json({
-    success: true,
-    message: 'Perfil asignado actualizado',
-    item: updated
-  });
+  const item = portfolio.get(req.params.id);
+  if (!item) { res.status(404).json({ error: 'No encontrado' }); return; }
+  const updated = { ...item, profileId: req.body.profileId || item.profileId, profileName: req.body.profileName || item.profileName };
+  portfolio.set(req.params.id, updated);
+  res.json({ success: true, item: updated });
 });
 
-export function startServer(): void {
-  app.listen(PORT, () => {
-    console.log(`🚀 Licitaciones API corriendo en http://localhost:${PORT}`);
-    console.log(`📋 Endpoints disponibles:`);
-    console.log(`   GET  /api/health`);
-    console.log(`   GET  /api/profiles`);
-    console.log(`   POST /api/profiles`);
-    console.log(`   GET  /api/opportunities`);
-    console.log(`   GET  /api/opportunities/stats`);
-    console.log(`   POST /api/opportunities/run`);
-    console.log(`   GET  /api/portfolio`);
-    console.log(`   GET  /api/portfolio/stats`);
-    console.log(`   POST /api/portfolio`);
-    console.log(`   PUT  /api/portfolio/:id/score`);
-    console.log(`   PUT  /api/portfolio/:id/category`);
-    console.log(`   PUT  /api/portfolio/:id/notes`);
-    console.log(`   DELETE /api/portfolio/:id`);
-  });
-}
+app.delete('/api/portfolio/:id', (req: Request, res: Response) => {
+  if (!portfolio.has(req.params.id)) { res.status(404).json({ error: 'No encontrado' }); return; }
+  portfolio.delete(req.params.id);
+  res.json({ success: true, message: 'Eliminado' });
+});
 
-export { app };
+// ==========================================
+// STATIC
+// ==========================================
+app.use(express.static(path.join(__dirname, '../../frontend')));
+app.get('*', (_req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, '../../frontend/index.html'));
+});
 
-// Arrancar servidor cuando este archivo se ejecuta directamente
-startServer();
+// ==========================================
+// START
+// ==========================================
+app.listen(PORT, () => {
+  console.log(`🚀 AssetPark API en puerto ${PORT}`);
+  console.log(`📋 /api/health | /api/health/external | /api/profiles | /api/opportunities/run | /api/portfolio/*`);
+});

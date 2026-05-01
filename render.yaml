@@ -4,15 +4,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: |
-      set -e
-      echo "=== Compilando Engine ==="
-      cd engine && npm ci --no-bin-links && node node_modules/typescript/bin/tsc
-      cd ..
-      echo "=== Compilando API ==="
-      cd api && npm ci --no-bin-links && node node_modules/typescript/bin/tsc
-      cd ..
-      echo "=== Build completo ==="
+    buildCommand: echo "Using pre-compiled dist"
     startCommand: cd api && NODE_ENV=production node dist/index.js
     envVars:
       - key: NODE_ENV

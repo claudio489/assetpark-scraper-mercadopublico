@@ -3,7 +3,7 @@
 // scrape → normalize → score → output
 // ==========================================
 
-import { PipelineConfig, PipelineResult, ScoredOpportunity } from '../types';
+import { PipelineConfig, PipelineResult, ScoredOpportunity, Opportunity } from '../types';
 import { scrapeOpportunities } from '../scraper';
 import { normalizeOpportunities } from '../normalizer';
 import { scoreOpportunities } from '../scoring';
@@ -50,7 +50,7 @@ export async function runPipeline(config: PipelineConfig): Promise<PipelineResul
  * Calcula estadísticas desde el array de oportunidades
  * (NO depende de otra fuente de datos)
  */
-export function calculateStats(opportunities: ScoredOpportunity[]) {
+export function calculateStats(opportunities: Opportunity[]) {
   const total = opportunities.length;
   const alta = opportunities.filter(o => o.priority === 'alta').length;
   const media = opportunities.filter(o => o.priority === 'media').length;

@@ -1,7 +1,15 @@
 import { RawOpportunity } from '../types';
 /**
- * Scrapea licitaciones activas de MercadoPublico.cl
- * Hace detalle por cada una para obtener fecha, region, organismo completos
+ * Test rapido de conexion
+ */
+export declare function testConnection(): Promise<{
+    ok: boolean;
+    message: string;
+    count?: number;
+}>;
+/**
+ * Scrapea licitaciones activas - Version OPTIMIZADA
+ * Usa SOLO la lista basica (1 llamada HTTP). No hace detalle por item.
  */
 export declare function scrapeOpportunities(options?: {
     sources?: string[];
