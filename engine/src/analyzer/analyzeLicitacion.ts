@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // ANALYZER — Analiza texto de bases licitación
 // ==========================================
 
@@ -36,14 +36,10 @@ function countMatches(text: string, keywords: string[]): number {
 function extractRequisitos(text: string): string[] {
   const requisitos: string[] = [];
   const patterns = [
-    /(?:requisito|condici[oó]n|exigencia|obligaci[oó]n)[\s:]*([^.
-]{10,200})/gi,
-    /(?:el proveedor debe|se exige|es obligatorio|deber[aá])[\s:]*([^.
-]{10,200})/gi,
-    /(?:experiencia m[ií]nima|antig[uü]edad|patente comercial|permiso)[\s:]*([^.
-]{10,200})/gi,
-    /(?:garant[ií]a|fianza|aval)[\s:]*([^.
-]{10,200})/gi,
+    /(?:requisito|condici[oó]n|exigencia|obligaci[oó]n)[\s:]*([^\\n]{10,200})/gi,
+    /(?:el proveedor debe|se exige|es obligatorio|deber[aá])[\s:]*([^\\n]{10,200})/gi,
+    /(?:experiencia m[ií]nima|antig[uü]edad|patente comercial|permiso)[\s:]*([^\\n]{10,200})/gi,
+    /(?:garant[ií]a|fianza|aval)[\s:]*([^\\n]{10,200})/gi,
   ];
   
   for (const pattern of patterns) {

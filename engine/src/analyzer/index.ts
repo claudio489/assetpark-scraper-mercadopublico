@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // ANALYZER - Capa de analíticas avanzadas
 // Scoring con criterios de negocio DYG
 // ==========================================
@@ -17,6 +17,8 @@ export interface HistoricalPattern {
   mostFrequentWinner: string;
   averageBidders: number;
   winRateEstimate: number;  // 0-100 probabilidad de ganar
+  reasons: string[];
+  competitionScore: number;
 }
 
 export interface AnalyticScore {

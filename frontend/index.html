@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -137,7 +137,7 @@ const MP='https://api.mercadopublico.cl/servicios/v1/publico';
 const TIC='8BBCAB7E-0911-4E40-BD68-C56A0A33FF78';
 const API='/api';
 const CATS=['Construcción','Montaje','Mantención','Suministro EPP','Software a la medida'];
-let st={ops:[],pf:[],port:[],load:false,sel:null,pid:'buceo',tab:1};
+let st={ops:[],pf:[],port:[],load:false,sel:null,pid:'constructora',tab:1};
 
 // Perfiles hardcodeados (igual que engine/src/profiles)
 const PROFILES=[{id:'constructora',name:'Constructora / Obras Civiles',keywords:['construccion','obra civil','obra publica','infraestructura','edificacion','puente','camino','pavimentacion','hormigon','asfalto','terraplen','demolicion','excavacion','movimiento de tierra','construccion de edificios','construccion de viviendas','construccion de departamentos','construccion de oficinas','construccion de locales comerciales','construccion de bodegas','construccion de galpones','construccion de naves industriales','construccion de plantas industriales','construccion de centros de distribucion','construccion de centros logisticos','construccion de centros comerciales','construccion de malls','construccion de supermercados','construccion de hipermercados','construccion de retail','construccion de strip center','construccion de locales','construccion de edificio','construccion de torre','construccion de rascacielos','construccion de condominio','construccion de parcela','construccion de casa','construccion de cabana','construccion de bungalow','construccion de chalet','construccion de residencia','construccion de mansion','construccion de villa','construccion de complejo residencial','construccion de urbanizacion','construccion de loteo','construccion de barrio','construccion de conjunto habitacional','construccion de vivienda social','construccion de vivienda popular','construccion de vivienda de interes social','construccion de vis','construccion de vivienda de integracion social','construccion de vivienda emergente','construccion de vivienda progresiva','construccion de vivienda definitiva','construccion de vivienda temporal','construccion de albergue','construccion de refugio','construccion de campamento','construccion de base','construccion de puesto','construccion de caseta','construccion de garita','construccion de pabellon','construccion de modulo','construccion de prefabricado','construccion de estructura metalica','construccion de estructura de acero','construccion de estructura de hormigon','construccion de estructura de madera','construccion de estructura mixta','construccion de obra gruesa','construccion de obra fina','construccion de terminaciones','construccion de acabados','construccion de instalaciones','construccion de redes','construccion de conexiones','construccion de acometidas','construccion de habilitacion','construccion de urbanizacion','construccion de pavimentacion','construccion de pavimento','construccion de calzada','construccion de vereda','construccion de acera','construccion de banquina','construccion de bordillo','construccion de cuneta','construccion de alcantarilla','construccion de sumidero','construccion de rebombeo','construccion de bombeo','construccion de estacion de bombeo','construccion de planta de bombeo','construccion de elevacion','construccion de sistema de rebombeo','construccion de sistema de bombeo','construccion de pozo','construccion de noria','construccion de pileta','construccion de estanque','construccion de cisterna','construccion de reservorio','construccion de tanque','construccion de torre de agua','construccion de red de agua','construccion de red de alcantarillado','construccion de red de gas','construccion de red electrica','construccion de red de telecomunicaciones','construccion de red de fibra optica','construccion de red de datos','construccion de red de voz','construccion de red de video','construccion de red de seguridad','construccion de red de control','construccion de red de automatizacion','construccion de red de domotica','construccion de red de inmotica','construccion de sistema de seguridad','construccion de sistema de control de accesos','construccion de sistema de vigilancia','construccion de sistema de monitoreo','construccion de sistema de alarmas','construccion de sistema de deteccion de incendios','construccion de sistema de supresion de incendios','construccion de sistema de rociadores','construccion de sistema de hidrantes','construccion de sistema de extintores','construccion de sistema de extincion','construccion de sistema de proteccion contra incendios','construccion de sistema de ventilacion','construccion de sistema de climatizacion','construccion de sistema de aire acondicionado','construccion de sistema de calefaccion','construccion de sistema de refrigeracion','construccion de sistema de ventilacion forzada','construccion de sistema de ventilacion natural','construccion de sistema de ventilacion mecanica','construccion de sistema de ventilacion hibrida','construccion de sistema de ventilacion asistida','construccion de sistema de aireacion','construccion de sistema de extraccion','construccion de sistema de impulsion','construccion de sistema de renovacion de aire','construccion de sistema de calidad de aire','construccion de sistema de filtracion','construccion de sistema de purificacion','construccion de sistema de deshumidificacion','construccion de sistema de humidificacion','construccion de sistema de tratamiento de aire','construccion de sistema de acondicionamiento de aire','construccion de sistema de climatizacion centralizada','construccion de sistema de climatizacion descentralizada','construccion de sistema de climatizacion variable','construccion de sistema de climatizacion constante','construccion de sistema de climatizacion por zonas','construccion de sistema de climatizacion por areas','construccion de sistema de climatizacion por ambientes','construccion de sistema de climatizacion por espacios','construccion de sistema de climatizacion por sectores','construccion de sistema de climatizacion por niveles','construccion de sistema de climatizacion por pisos']},
@@ -189,64 +189,51 @@ function switchTab(n){
 async function runPipe(){
   if(st.load)return;
   st.load=true;st.ops=[];
-  $('runBtn').disabled=true;
-  $('spin').style.display='inline-block';
-  $('runTxt').textContent='Cargando desde MercadoPublico...';
-  $('err').classList.remove('show');
+  runBtn.disabled=true;
+  spin.style.display='inline-block';
+  runTxt.textContent='Cargando desde MercadoPublico...';
+  err.classList.remove('show');
 
   const prof=gProf(st.pid);
   let data=null;
 
   try{
-    // Llamada DIRECTA desde el navegador a MercadoPublico.cl
-    const url=`${MP}/licitaciones.json?estado=activas&ticket=${TIC}`;
-    const r=await fetch(url,{headers:{'Accept':'application/json'}});
+    const r=await fetch(API+'/opportunities/run',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({profileId:st.pid,limit:50})
+    });
     if(r.ok){
       data=await r.json();
-      console.log('[Frontend] MercadoPublico OK, items:',data.Listado?.length||0);
+      console.log('[Frontend] Pipeline OK, items:',data.opportunities?.length||0);
     }else{
-      console.log('[Frontend] MercadoPublico HTTP',r.status);
+      console.log('[Frontend] Pipeline HTTP',r.status);
     }
   }catch(e){
-    console.log('[Frontend] Error MercadoPublico:',e.message);
+    console.log('[Frontend] Error Pipeline:',e.message);
   }
 
-  let raw=[];
-  if(data&&data.Listado&&data.Listado.length>0){
-    raw=data.Listado.map(lic=>({
-      codigo:lic.CodigoExterno||'',nombre:lic.Nombre||'',organismo:(lic.Comprador?.NombreOrganismo||lic.Comprador?.NombreUnidad||'Organismo no especificado'),region:(lic.Comprador?.RegionUnidad||'No especificada').replace(/^Region\s*/i,''),monto:typeof lic.MontoEstimado==='number'?lic.MontoEstimado:0,fecha_publicacion:(lic.Fechas?.FechaPublicacion||'').split('T')[0],fecha_cierre:(lic.Fechas?.FechaCierre||lic.FechaCierre||'').split('T')[0],estado:lic.Estado||'Publicada',categoria:lic.Tipo||'General',url:`https://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(lic.CodigoExterno||'')}`,descripcion:lic.Nombre||'',fuente:'MercadoPublico'
-    }));
+  let ops=[];
+  if(data&&data.success&&data.opportunities&&data.opportunities.length>0){
+    ops=data.opportunities;
   }else{
     console.log('[Frontend] Usando demo data');
-    raw=DEMO;
-  }
-
-  // Filtrar por keywords del perfil
-  if(prof.keywords.length>0){
-    const kw=prof.keywords.map(k=>k.toLowerCase());
-    raw=raw.filter(op=>{
-      const t=(op.nombre+' '+op.descripcion).toLowerCase();
-      return kw.some(w=>t.includes(w));
-    });
-  }
-
-  // Scoring
-  st.ops=raw.slice(0,20).map(op=>{
-    const sc=calcScore(op.nombre,op.descripcion,prof.keywords);
-    return{
+    ops=DEMO.map(op=>({
       id:op.codigo,title:op.nombre,description:op.descripcion,entity:op.organismo,region:op.region,
       amount:op.monto,date:op.fecha_publicacion,closingDate:op.fecha_cierre,status:op.estado,
-      category:op.categoria,url:op.url,score:sc.ms||50,priority:sc.p,source:op.fuente,
-      matchScore:sc.ms,matchedKeywords:sc.mk
-    };
-  });
+      category:op.categoria,url:op.url,source:op.fuente,
+      score:60,priority:'media',matchScore:60,matchedKeywords:[],
+      businessScore:50,businessReasons:['Demo data'],recommendation:'EVALUAR'
+    }));
+  }
 
+  st.ops=ops;
   renderDash();renderTbl();
 
   st.load=false;
-  $('runBtn').disabled=false;
-  $('spin').style.display='none';
-  $('runTxt').textContent='Ejecutar Pipeline';
+  runBtn.disabled=false;
+  spin.style.display='none';
+  runTxt.textContent='Ejecutar Pipeline';
 }
 
 function renderDash(){
