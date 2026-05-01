@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AssetPark Scraper MercadoPublico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #111118;
+      --bg-card: #16161f;
+      --bg-card-hover: #1c1c28;
+      --bg-input: #0e0e14;
+      --border: #252535;
+      --border-hover: #3a3a55;
+      --text-primary: #e8e8ef;
+      --text-secondary: #8b8ba3;
+      --text-muted: #5a5a72;
+      --accent: #6366f1;
+      --accent-hover: #8184f8;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --score-high: #10b981;
+      --score-mid: #f59e0b;
+      --score-low: #ef4444;
+      --priority-high-bg: rgba(239, 68, 68, 0.1);
+      --priority-high-text: #f87171;
+      --priority-mid-bg: rgba(245, 158, 11, 0.1);
+      --priority-mid-text: #fbbf24;
+      --priority-low-bg: rgba(16, 185, 129, 0.1);
+      --priority-low-text: #34d399;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+    .app { max-width: 1440px; margin: 0 auto; padding: 32px; }
+    .app-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border);
+      flex-wrap: wrap; gap: 16px;
+    }
+    .app-header h1 {
+      font-size: 1.75rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .app-header .subtitle { color: var(--text-secondary); font-size: 0.875rem; margin-top: 4px; }
+    .brand-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 6px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: #fff; font-size: 0.6875rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
+    }
+    .header-tabs {
+      display: flex; gap: 4px; background: var(--bg-input); padding: 4px;
+      border-radius: var(--radius-sm); border: 1px solid var(--border);
+    }
+    .tab {
+      padding: 8px 16px; border-radius: 6px; border: none; background: transparent;
+      color: var(--text-secondary); font-size: 0.875rem; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; position: relative;
+    }
+    .tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+    .tab.active { background: var(--accent); color: #fff; }
+    .tab-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+      background: var(--score-high); color: #fff; font-size: 0.6875rem;
+      font-weight: 700; margin-left: 6px;
+    }
+    .dashboard {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 32px;
+    }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; transition: all 0.2s;
+    }
+    .card:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
+    .card-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
+    .card-value { font-size: 2.25rem; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .card-value.alta { color: var(--priority-high-text); }
+    .card-value.media { color: var(--priority-mid-text); }
+    .card-value.baja { color: var(--priority-low-text); }
+    .card-value.score { color: var(--accent); }
+    .controls { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
+    select, input[type="number"], input[type="text"] {
+      padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+      background: var(--bg-input); color: var(--text-primary); font-size: 0.875rem;
+      cursor: pointer; outline: none; transition: border-color 0.2s;
+    }
+    select:focus, input:focus { border-color: var(--accent); }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-primary); font-size: 0.875rem;
+      font-weight: 500; cursor: pointer; transition: all 0.2s;
+    }
+    .btn:hover { background: var(--bg-card-hover); border-color: var(--border-hover); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 0 20px var(--accent-glow); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .table-container { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { background: var(--bg-secondary); padding: 14px 20px; text-align: left; font-weight: 600; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 14px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text-secondary); }
+    tr:hover td { background: rgba(99,102,241,0.04); cursor: pointer; }
+    tr.active td { background: var(--accent-glow); }
+    .score-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px; border-radius: 50%; font-weight: 700;
+      font-size: 0.875rem; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .score-badge.alta { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .score-badge.media { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .score-badge.baja { background: linear-gradient(135deg, #10b981, #059669); }
+    .priority {
+      display: inline-flex; padding: 4px 12px; border-radius: 999px;
+      font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .priority.alta { background: var(--priority-high-bg); color: var(--priority-high-text); }
+    .priority.media { background: var(--priority-mid-bg); color: var(--priority-mid-text); }
+    .priority.baja { background: var(--priority-low-bg); color: var(--priority-low-text); }
+    .amount { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+    code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.8125rem; color: var(--accent); }
+    .empty { text-align: center; padding: 80px 20px; color: var(--text-muted); }
+    .empty h3 { color: var(--text-secondary); margin-bottom: 8px; font-size: 1.125rem; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #f87171; padding: 14px 18px; border-radius: var(--radius-sm); margin-bottom: 20px; font-size: 0.875rem; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 100; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 640px; max-height: 90vh; overflow: auto; box-shadow: var(--shadow-lg); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 28px; border-bottom: 1px solid var(--border); }
+    .modal-header h2 { font-size: 1.125rem; font-weight: 600; color: var(--text-primary); }
+    .modal-close { background: none; border: none; font-size: 1.75rem; cursor: pointer; color: var(--text-muted); line-height: 1; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); transition: all 0.2s; }
+    .modal-close:hover { color: var(--text-primary); background: var(--bg-secondary); }
+    .modal-body { padding: 28px; }
+    .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 24px; }
+    .detail-item.full { grid-column: 1 / -1; }
+    .detail-item dt { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+    .detail-item dd { font-size: 0.875rem; color: var(--text-primary); }
+    .detail-item dd.amount { font-size: 1.125rem; font-weight: 700; color: var(--accent); }
+    .modal-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .modal-actions a { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: var(--radius-sm); background: var(--accent); color: #fff; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; }
+    .modal-actions a:hover { background: var(--accent-hover); box-shadow: 0 0 20px var(--accent-glow); }
+    .modal-actions .btn-secondary { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
+    .modal-actions .btn-secondary:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+    .keyword-tag { display: inline-flex; background: var(--accent-glow); color: var(--accent); padding: 3px 10px; border-radius: 6px; font-size: 0.8125rem; font-weight: 500; }
+    .profile-tag { display: inline-flex; padding: 3px 10px; border-radius: 6px; background: var(--accent-glow); color: var(--accent); font-size: 0.8125rem; font-weight: 500; }
+    .save-section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px; margin: 20px 0; }
+    .save-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: var(--text-primary); font-size: 0.9375rem; }
+    .save-icon { font-size: 1.25rem; color: var(--score-mid); }
+    .save-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .save-field { display: flex; flex-direction: column; gap: 6px; }
+    .save-field label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+    .btn-save { background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #fff !important; border-color: #d97706 !important; font-weight: 600; }
+    .btn-save:hover { box-shadow: 0 4px 16px rgba(245,158,11,0.25) !important; }
+    .btn-save.saved { background: linear-gradient(135deg, #10b981, #059669) !important; border-color: #059669 !important; }
+    .portfolio-empty { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
+    .portfolio-stats { margin-bottom: 24px; }
+    .portfolio-filters { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-count { color: var(--text-muted); font-size: 0.875rem; }
+    .score-edit { display: flex; align-items: center; gap: 6px; }
+    .score-edit input { width: 50px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--accent); background: var(--bg-input); color: var(--text-primary); font-size: 0.875rem; font-weight: 700; text-align: center; }
+    .score-edit button { width: 28px; height: 28px; border-radius: 6px; border: none; background: var(--score-high); color: #fff; cursor: pointer; font-size: 0.875rem; display: flex; align-items: center; justify-content: center; }
+    .category-select, .profile-select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-primary); font-size: 0.8125rem; cursor: pointer; max-width: 160px; }
+    .row-actions { display: flex; gap: 6px; align-items: center; }
+    .btn-icon { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
+    .btn-icon:hover { background: var(--bg-card-hover); color: var(--text-primary); border-color: var(--border-hover); }
+    .btn-icon.delete:hover { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
+    .hidden { display: none !important; }
+    @media (max-width: 768px) { .app { padding: 16px; } .dashboard { grid-template-columns: repeat(2, 1fr); } .detail-grid { grid-template-columns: 1fr; } th, td { padding: 10px 12px; } .modal { max-width: 100%; margin: 8px; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div>
+        <div class="brand-badge">AssetPark</div>
+        <h1>Scraper MercadoPublico</h1>
+        <div class="subtitle">Prospectador de licitaciones • Múltiples perfiles de búsqueda para cañón de ventas</div>
+      </div>
+      <div class="header-tabs">
+        <button class="tab active" id="tab-oportunidades" onclick="switchTab('oportunidades')">Oportunidades</button>
+        <button class="tab" id="tab-portfolio" onclick="switchTab('portfolio')">Mi Portfolio <span id="tab-badge" class="tab-badge hidden">0</span></button>
+      </div>
+    </header>
+
+    <div id="view-oportunidades">
+      <div class="controls">
+        <select id="profile-select" onchange="changeProfile(this.value)"></select>
+        <button class="btn btn-primary" id="btn-run" onclick="runPipeline()">
+          <span id="btn-spinner" class="spinner hidden" style="width:14px;height:14px;border-width:2px;"></span>
+          <span id="btn-text">⟳ Ejecutar Pipeline</span>
+        </button>
+        <button class="btn btn-secondary" onclick="switchTab('portfolio')">★ Portfolio (<span id="portfolio-count">0</span>)</button>
+      </div>
+      <div id="error-box" class="error-box hidden"></div>
+      <div id="dashboard" class="dashboard"></div>
+      <div id="table-container" class="table-container"><div class="empty"><h3>Sin datos</h3><p>Seleccione un perfil y ejecute el pipeline para cargar licitaciones.</p></div></div>
+    </div>
+
+    <div id="view-portfolio" class="hidden">
+      <div id="portfolio-dashboard" class="dashboard portfolio-stats"></div>
+      <div class="portfolio-filters">
+        <select id="portfolio-filter-category" onchange="loadPortfolio()"><option value="Todas">Todas las categorías</option></select>
+        <select id="portfolio-filter-profile" onchange="loadPortfolio()"><option value="Todas">Todos los perfiles</option></select>
+        <span class="filter-count"><span id="portfolio-filter-count">0</span> licitaciones</span>
+      </div>
+      <div id="portfolio-table" class="table-container"></div>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header"><h2>Detalle de Licitación</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+    const PORTFOLIO_CATEGORIES = ['Construcción','Montaje','Mantención','Suministro EPP','Software a la medida'];
+    let state = { opportunities: [], stats: null, profiles: [], portfolio: [], portfolioStats: null, loading: false, error: null, activeProfileId: 'buceo', activeTab: 'oportunidades', selectedOpportunity: null };
+
+    async function apiGet(path) { const r = await fetch(API_BASE + path); if (!r.ok) throw new Error(await r.text()); const d = await r.json(); return d; }
+    async function apiPost(path, body) { const r = await fetch(API_BASE + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); if (!r.ok) throw new Error((await r.json()).error || 'Error'); return r.json(); }
+    async function apiPut(path, body) { const r = await fetch(API_BASE + path, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); if (!r.ok) throw new Error('Error'); return r.json(); }
+    async function apiDelete(path) { const r = await fetch(API_BASE + path, { method:'DELETE' }); if (!r.ok) throw new Error('Error'); return r.json(); }
+
+    async function init() {
+      try { const p = await apiGet('/profiles'); if (p.success) { state.profiles = p.profiles; populateProfileSelect(); } } catch(e) {}
+      try { await runPipeline(); } catch(e) {}
+      try { await loadPortfolio(); } catch(e) {}
+    }
+
+    function populateProfileSelect() {
+      const sel = document.getElementById('profile-select');
+      sel.innerHTML = state.profiles.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+      sel.value = state.activeProfileId;
+    }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      document.getElementById('tab-oportunidades').classList.toggle('active', tab === 'oportunidades');
+      document.getElementById('tab-portfolio').classList.toggle('active', tab === 'portfolio');
+      document.getElementById('view-oportunidades').classList.toggle('hidden', tab !== 'oportunidades');
+      document.getElementById('view-portfolio').classList.toggle('hidden', tab !== 'portfolio');
+      if (tab === 'portfolio') loadPortfolio();
+    }
+
+    async function runPipeline() {
+      if (state.loading) return;
+      state.loading = true; state.error = null;
+      document.getElementById('btn-run').disabled = true;
+      document.getElementById('btn-spinner').classList.remove('hidden');
+      document.getElementById('btn-text').textContent = 'Procesando...';
+      document.getElementById('error-box').classList.add('hidden');
+      try {
+        const run = await apiPost('/opportunities/run', { profileId: state.activeProfileId });
+        if (run.success) { state.opportunities = run.opportunities || []; }
+        const s = await apiGet('/opportunities/stats');
+        if (s.success) state.stats = s.stats;
+        renderDashboard(); renderTable();
+      } catch(e) { state.error = e.message; document.getElementById('error-box').textContent = 'Error: ' + e.message; document.getElementById('error-box').classList.remove('hidden'); }
+      finally { state.loading = false; document.getElementById('btn-run').disabled = false; document.getElementById('btn-spinner').classList.add('hidden'); document.getElementById('btn-text').textContent = '⟳ Ejecutar Pipeline'; }
+    }
+
+    function changeProfile(id) { state.activeProfileId = id; runPipeline(); }
+
+    function renderDashboard() {
+      const s = state.stats;
+      if (!s) { document.getElementById('dashboard').innerHTML = '<div class="empty"><div class="spinner"></div><p>Cargando estadísticas...</p></div>'; return; }
+      document.getElementById('dashboard').innerHTML = `
+        <div class="card"><div class="card-label">Total</div><div class="card-value">${s.total}</div></div>
+        <div class="card"><div class="card-label">Prioridad Alta</div><div class="card-value alta">${s.alta}</div></div>
+        <div class="card"><div class="card-label">Prioridad Media</div><div class="card-value media">${s.media}</div></div>
+        <div class="card"><div class="card-label">Prioridad Baja</div><div class="card-value baja">${s.baja}</div></div>
+        <div class="card"><div class="card-label">Score Promedio</div><div class="card-value score">${s.averageScore}</div></div>`;
+    }
+
+    function renderTable() {
+      const container = document.getElementById('table-container');
+      if (state.opportunities.length === 0) { container.innerHTML = '<div class="empty"><h3>Sin resultados</h3><p>Ejecute el pipeline con un perfil diferente.</p></div>'; return; }
+      let html = '<div class="table-scroll"><table><thead><tr><th>Score</th><th>Título</th><th>Entidad</th><th>Región</th><th>Monto</th><th>Código</th><th>Prioridad</th></tr></thead><tbody>';
+      for (const opp of state.opportunities) {
+        html += `<tr onclick="openModal('${esc(opp.id)}')" ondblclick="window.open('${esc(opp.url)}','_blank','noopener,noreferrer')">
+          <td><span class="score-badge ${esc(opp.priority)}">${opp.score}</span></td>
+          <td style="max-width:320px"><div style="font-weight:500">${esc(opp.title)}</div><div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${esc(opp.category||'General')}</div></td>
+          <td>${esc(opp.entity||'-')}</td>
+          <td>${esc(opp.region||'-')}</td>
+          <td class="amount">${formatAmount(opp.amount)}</td>
+          <td><code>${esc(opp.id)}</code></td>
+          <td><span class="priority ${esc(opp.priority)}">${esc(opp.priority)}</span></td>
+        </tr>`;
+      }
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+    }
+
+    function openModal(id) {
+      const opp = state.opportunities.find(o => o.id === id);
+      if (!opp) return;
+      state.selectedOpportunity = opp;
+      const profile = state.profiles.find(p => p.id === state.activeProfileId);
+      const profileName = profile ? profile.name : state.activeProfileId;
+      let keywordsHtml = '';
+      if (opp.matchedKeywords && opp.matchedKeywords.length) {
+        keywordsHtml = '<div class="detail-item full"><dt>Keywords Coincidentes</dt><dd><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' + opp.matchedKeywords.map(k => `<span class="keyword-tag">${esc(k)}</span>`).join('') + '</div></dd></div>';
+      }
+      document.getElementById('modal-body').innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-item"><dt>Código</dt><dd><code>${esc(opp.id)}</code></dd></div>
+          <div class="detail-item"><dt>Score</dt><dd><span class="priority ${esc(opp.priority)}">${opp.score}/100 (${opp.priority})</span></dd></div>
+          <div class="detail-item"><dt>Entidad</dt><dd>${esc(opp.entity||'-')}</dd></div>
+          <div class="detail-item"><dt>Región</dt><dd>${esc(opp.region||'-')}</dd></div>
+          <div class="detail-item"><dt>Monto</dt><dd class="amount">${formatAmount(opp.amount)}</dd></div>
+          <div class="detail-item"><dt>Fecha Publicación</dt><dd>${esc(opp.date||'-')}</dd></div>
+          <div class="detail-item"><dt>Categoría</dt><dd>${esc(opp.category||'General')}</dd></div>
+          <div class="detail-item"><dt>Estado</dt><dd>${esc(opp.status||'-')}</dd></div>
+          <div class="detail-item"><dt>Match Score</dt><dd>${opp.matchScore}/100</dd></div>
+          <div class="detail-item"><dt>Perfil de Búsqueda</dt><dd><span class="profile-tag">${esc(profileName)}</span></dd></div>
+          ${opp.aiScore !== undefined ? `<div class="detail-item"><dt>AI Score</dt><dd>${opp.aiScore}/100</dd></div>` : ''}
+          ${keywordsHtml}
+          <div class="detail-item full"><dt>Título</dt><dd style="font-weight:500">${esc(opp.title)}</dd></div>
+          <div class="detail-item full"><dt>Descripción</dt><dd>${esc(opp.description||'Sin descripción disponible.')}</dd></div>
+        </div>
+        <div class="save-section">
+          <div class="save-header"><span class="save-icon">★</span><strong>Guardar en Mi Portfolio</strong></div>
+          <div class="save-fields">
+            <div class="save-field"><label>Categoría de negocio</label><select id="save-category"><option value="Sin categoría">Seleccionar...</option>${PORTFOLIO_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>
+            <div class="save-field"><label>Notas</label><input type="text" id="save-notes" placeholder="Ej: Revisar pliegos..."></div>
+          </div>
+          <button class="btn btn-save" id="btn-save-opp" onclick="saveCurrent()">★ Guardar Licitación</button>
+        </div>
+        <div class="modal-actions">
+          <a href="${esc(opp.url)}" target="_blank" rel="noopener noreferrer">Ver en MercadoPublico →</a>
+          <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+        </div>`;
+      document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    function closeModal(e) { if (e && e.target !== document.getElementById('modal-overlay')) return; document.getElementById('modal-overlay').classList.add('hidden'); state.selectedOpportunity = null; }
+
+    async function saveCurrent() {
+      const opp = state.selectedOpportunity;
+      if (!opp) return;
+      const cat = document.getElementById('save-category').value;
+      const notes = document.getElementById('save-notes').value;
+      const profile = state.profiles.find(p => p.id === state.activeProfileId);
+      const btn = document.getElementById('btn-save-opp');
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      try {
+        await apiPost('/portfolio', { opportunity: opp, category: cat, notes, profileId: state.activeProfileId, profileName: profile ? profile.name : state.activeProfileId });
+        btn.textContent = '✓ Guardado'; btn.classList.add('saved');
+        await loadPortfolio();
+        setTimeout(() => { btn.textContent = '★ Guardar Licitación'; btn.classList.remove('saved'); btn.disabled = false; }, 2000);
+      } catch(e) { btn.textContent = 'Error'; setTimeout(() => { btn.textContent = '★ Guardar Licitación'; btn.disabled = false; }, 2000); }
+    }
+
+    async function loadPortfolio() {
+      try {
+        const cat = document.getElementById('portfolio-filter-category').value;
+        const prof = document.getElementById('portfolio-filter-profile').value;
+        let url = '/portfolio';
+        const params = [];
+        if (cat && cat !== 'Todas') params.push('category=' + encodeURIComponent(cat));
+        if (prof && prof !== 'Todas') params.push('profileId=' + encodeURIComponent(prof));
+        if (params.length) url += '?' + params.join('&');
+        const [itemsRes, statsRes] = await Promise.all([apiGet(url), apiGet('/portfolio/stats')]);
+        if (itemsRes.success) { state.portfolio = itemsRes.items || []; }
+        if (statsRes.success) { state.portfolioStats = statsRes; }
+        populatePortfolioFilters();
+        renderPortfolio(); updatePortfolioBadge();
+      } catch(e) {}
+    }
+
+    function populatePortfolioFilters() {
+      const catSel = document.getElementById('portfolio-filter-category');
+      const profSel = document.getElementById('portfolio-filter-profile');
+      const currentCat = catSel.value; const currentProf = profSel.value;
+      let catHtml = '<option value="Todas">Todas las categorías</option>';
+      for (const c of PORTFOLIO_CATEGORIES) catHtml += `<option value="${esc(c)}">${esc(c)}</option>`;
+      catSel.innerHTML = catHtml; catSel.value = currentCat;
+      const profsInUse = Array.from(new Set(state.portfolio.filter(i=>i.profileId).map(i=>i.profileId)));
+      let profHtml = '<option value="Todas">Todos los perfiles</option>';
+      for (const pid of profsInUse) { const p = state.profiles.find(x=>x.id===pid); profHtml += `<option value="${esc(pid)}">${esc(p?p.name:pid)}</option>`; }
+      profSel.innerHTML = profHtml; profSel.value = currentProf;
+    }
+
+    function updatePortfolioBadge() {
+      const badge = document.getElementById('tab-badge');
+      const count = document.getElementById('portfolio-count');
+      const n = state.portfolio.length;
+      badge.textContent = n; count.textContent = n;
+      if (n > 0) badge.classList.remove('hidden'); else badge.classList.add('hidden');
+    }
+
+    function renderPortfolio() {
+      const dash = document.getElementById('portfolio-dashboard');
+      const tbl = document.getElementById('portfolio-table');
+      const s = state.portfolioStats;
+      if (s) {
+        dash.innerHTML = `
+          <div class="card"><div class="card-label">Guardadas</div><div class="card-value">${s.total}</div></div>
+          <div class="card"><div class="card-label">Score Promedio</div><div class="card-value score">${s.averageScore}</div></div>
+          ${PORTFOLIO_CATEGORIES.map(c => `<div class="card"><div class="card-label">${esc(c)}</div><div class="card-value">${s.byCategory[c]||0}</div></div>`).join('')}`;
+      } else { dash.innerHTML = ''; }
+      if (state.portfolio.length === 0) { tbl.innerHTML = '<div class="empty" style="padding:60px 20px"><h3>Portfolio vacío</h3><p>Seleccione una licitación y haga clic en "Guardar" para agregarla a su portfolio.</p></div>'; document.getElementById('portfolio-filter-count').textContent = '0'; return; }
+      let html = '<div class="table-scroll"><table><thead><tr><th>Score</th><th>Título</th><th>Entidad</th><th>Perfil Búsqueda</th><th>Categoría</th><th>Monto</th><th>Cierre</th><th>Guardada</th><th>Acciones</th></tr></thead><tbody>';
+      for (const item of state.portfolio) {
+        html += `<tr>
+          <td><div onclick="editScore('${esc(item.id)}',${item.score})" style="cursor:pointer"><span class="score-badge ${esc(item.priority)}">${item.score}</span></div></td>
+          <td style="max-width:280px"><div style="font-weight:500">${esc(item.title)}</div><div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${esc(item.opportunityId)}</div></td>
+          <td>${esc(item.entity||'-')}</td>
+          <td><select class="profile-select" onchange="changePortfolioProfile('${esc(item.id)}',this.value)">${state.profiles.map(p=>`<option value="${esc(p.id)}" ${p.id===item.profileId?'selected':''}>${esc(p.name)}</option>`).join('')}</select></td>
+          <td><select class="category-select" onchange="changePortfolioCategory('${esc(item.id)}',this.value)">${PORTFOLIO_CATEGORIES.map(c=>`<option value="${esc(c)}" ${c===item.category?'selected':''}>${esc(c)}</option>`).join('')}</select></td>
+          <td class="amount">${formatAmount(item.amount)}</td>
+          <td>${formatDate(item.date)}</td>
+          <td>${formatDate((item.savedAt||'').split('T')[0])}</td>
+          <td><div class="row-actions"><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer" class="btn-icon" title="Ver">↗</a><button class="btn-icon delete" onclick="removePortfolio('${esc(item.id)}')" title="Eliminar">🗑</button></div></td>
+        </tr>`;
+      }
+      html += '</tbody></table></div>';
+      tbl.innerHTML = html;
+      document.getElementById('portfolio-filter-count').textContent = state.portfolio.length;
+    }
+
+    async function changePortfolioProfile(id, profileId) {
+      const p = state.profiles.find(x=>x.id===profileId);
+      await apiPut('/portfolio/'+id+'/profile', { profileId, profileName: p?p.name:profileId });
+      await loadPortfolio();
+    }
+
+    async function changePortfolioCategory(id, category) {
+      await apiPut('/portfolio/'+id+'/category', { category });
+      await loadPortfolio();
+    }
+
+    async function removePortfolio(id) {
+      if (!confirm('¿Eliminar esta licitación del portfolio?')) return;
+      await apiDelete('/portfolio/'+id);
+      await loadPortfolio();
+    }
+
+    function editScore(id, currentScore) {
+      const item = state.portfolio.find(i=>i.id===id); if (!item) return;
+      const newScore = prompt('Nuevo score (0-100):', currentScore);
+      if (newScore === null) return;
+      const n = parseInt(newScore, 10);
+      if (isNaN(n) || n < 0 || n > 100) return alert('Score inválido');
+      apiPut('/portfolio/'+id+'/score', { score: n }).then(()=>loadPortfolio());
+    }
+
+    function esc(s) { if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function formatAmount(a) { if (!a || a <= 0) return 'No disp.'; return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(a); }
+    function formatDate(d) { if (!d) return '-'; const p = d.split('-'); if (p.length===3) return p[2]+'/'+p[1]+'/'+p[0]; return d; }
+
+    init();
+  </script>
+</body>
+</html>
