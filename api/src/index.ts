@@ -507,3 +507,4 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 AssetPark API v4.0.0 en puerto ${PORT}`);
   console.log(`📋 /api/health | /api/health/external | /api/profiles | /api/opportunities/run | /api/portfolio/*`);
 });
+// v4.0 deploy 20260501-2329
