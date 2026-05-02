@@ -6,6 +6,7 @@ services:
     region: oregon
     buildCommand: |
       set -e
+      echo "=== AssetPark Scraper v4.0 Build ==="
       echo "=== Instalando Engine ==="
       cd engine && npm install && cd ..
       echo "=== Compilando Engine ==="
@@ -14,10 +15,13 @@ services:
       cd api && npm install && cd ..
       echo "=== Compilando API ==="
       cd api && node node_modules/typescript/bin/tsc && cd ..
-      echo "=== Copiando frontend ==="
+      echo "=== Limpiando y copiando frontend ==="
+      rm -rf api/public
       mkdir -p api/public
-      cp -r frontend/* api/public/ 2>/dev/null || echo "No hay frontend para copiar"
+      cp -r frontend/* api/public/
+      echo "v4.0" > api/public/version.txt
       echo "=== Build OK ==="
+      ls -la api/public/
     startCommand: cd api && NODE_ENV=production node dist/index.js
     envVars:
       - key: NODE_ENV

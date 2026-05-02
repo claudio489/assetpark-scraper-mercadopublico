@@ -118,19 +118,31 @@ async function scrapeMercadoPublico(profileKeywords: string[], excludedKeywords:
 }
 
 // ==========================================
-// SCORING
+// SCORING - Base por matching de keywords (porcentaje)
 // ==========================================
 function calculateScore(title: string, description: string, keywords: string[]) {
+  // Perfil General (sin keywords) = neutral para que el usuario decida
+  if (keywords.length === 0) {
+    return { score: 50, priority: 'media' as const, matchedKeywords: ['General'], matchScore: 50 };
+  }
+
   const text = (title + ' ' + description).toLowerCase();
   const matched: string[] = [];
-  let score = 0;
   for (const k of keywords) {
     if (text.includes(k.toLowerCase())) {
       matched.push(k);
-      score += 3;
     }
   }
-  score = Math.min(100, score);
+
+  // Puntuación porcentual basada en cuántos keywords matchean
+  const matchRate = keywords.length > 0 ? matched.length / keywords.length : 0;
+  let score = Math.round(matchRate * 100);
+
+  // Bonus si hay al menos un match parcial
+  if (matched.length > 0 && matched.length < keywords.length) {
+    score = Math.min(100, score + 12); // +12 bonus por match parcial
+  }
+
   const priority = score >= 80 ? 'alta' : score >= 60 ? 'media' : 'baja';
   return { score, priority, matchedKeywords: matched, matchScore: score };
 }
@@ -159,11 +171,11 @@ function calculateBusinessScore(amount: number, profileId: string): { score: num
   let score = 50;
 
   if (amount === 0) {
-    reasons.push('Monto no visible (licitación activa)');
-    score = 40;
+    reasons.push('Monto oculto en licitación activa — revisar en ficha de MercadoPublico');
+    score = 60; // Neutral: no penalizar, evaluar por otros criterios
   } else if (amount < criteria.minAmount) {
     reasons.push(`Monto ${fmtMoney(amount)} está por debajo del mínimo operativo ${fmtMoney(criteria.minAmount)} para este rubro`);
-    score = 15;
+    score = 20;
   } else if (amount >= criteria.optimalAmount) {
     reasons.push(`Monto ${fmtMoney(amount)} supera el óptimo ${fmtMoney(criteria.optimalAmount)}`);
     score = 95;
@@ -199,26 +211,31 @@ function scoreToPriority(score: number): string {
 // ==========================================
 
 app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'assetpark-scraper', version: '3.1.0' });
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ status: 'ok', service: 'assetpark-scraper', version: '4.0.0' });
 });
 
 app.get('/api/health/external', async (_req: Request, res: Response) => {
   try {
     const data = await httpGet(`${MP_API}/licitaciones.json?estado=activas&ticket=${TICKET}`, 10000);
     const count = data.Listado?.length || 0;
+    res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, mercadoPublico: true, count, message: `Conectado - ${count} activas` });
   } catch (err) {
+    res.setHeader('Cache-Control', 'no-store');
     res.json({ success: false, mercadoPublico: false, message: (err as Error).message });
   }
 });
 
 app.get('/api/profiles', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, profiles: PROFILES });
 });
 
 app.get('/api/profile/:id', (req: Request, res: Response) => {
   const p = PROFILES.find(x => x.id === req.params.id);
   if (!p) { res.status(404).json({ error: 'No encontrado' }); return; }
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, profile: p });
 });
 
@@ -246,13 +263,19 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
       const baseSc = calculateScore(op.title, op.description, profile.keywords);
       const bizSc = calculateBusinessScore(op.amount, profile.id);
       
-      // Ponderación: 50% base + 50% negocio
-      const finalScore = Math.round(baseSc.score * 0.50 + bizSc.score * 0.50);
+      // Ponderación: 60% base + 40% negocio (más peso al matching de perfil)
+      const finalScore = Math.round(baseSc.score * 0.60 + bizSc.score * 0.40);
       
+      // Umbrales más realistas para evitar que todo sea EVITAR cuando monto=0
       let recommendation: string;
-      if (finalScore >= 75 && bizSc.score >= 60) recommendation = 'POSTULAR';
-      else if (finalScore >= 50 && bizSc.score >= 40) recommendation = 'EVALUAR';
+      if (finalScore >= 60 && bizSc.score >= 50) recommendation = 'POSTULAR';
+      else if (finalScore >= 40 && bizSc.score >= 30) recommendation = 'EVALUAR';
       else recommendation = 'EVITAR';
+      
+      // Perfil General: forzar EVALUAR para que el usuario decida manualmente
+      if (profileId === 'general') {
+        recommendation = 'EVALUAR';
+      }
       
       return {
         ...op,
@@ -276,12 +299,13 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
     
     lastResult = { profileId, runAt: new Date().toISOString(), stats, opportunities };
     
+    res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities });
     console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades`);
     
   } catch (error) {
     console.error('[API] Pipeline error:', (error as Error).message);
-    // Devolver resultado vacio para que el frontend no se quede colgado
+    res.setHeader('Cache-Control', 'no-store');
     res.json({
       success: true,
       profileId: profile.id,
@@ -295,14 +319,17 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
 
 app.get('/api/opportunities', (_req: Request, res: Response) => {
   if (!lastResult) {
+    res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, count: 0, opportunities: [], warning: 'Ejecute POST /api/opportunities/run primero' });
     return;
   }
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, count: lastResult.opportunities.length, profileId: lastResult.profileId, opportunities: lastResult.opportunities });
 });
 
 app.get('/api/opportunities/stats', (_req: Request, res: Response) => {
   if (!lastResult) {
+    res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, stats: { total: 0, alta: 0, media: 0, baja: 0, averageScore: 0, postular: 0, evaluar: 0, evitar: 0, totalAmount: 0, amountsByCategory: {} } });
     return;
   }
@@ -328,6 +355,7 @@ app.get('/api/opportunities/stats', (_req: Request, res: Response) => {
     totalAmount,
     amountsByCategory
   };
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, stats });
 });
 
@@ -338,6 +366,7 @@ app.get('/api/portfolio', (req: Request, res: Response) => {
   let items = Array.from(portfolio.values()).sort((a: any, b: any) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
   if (category && typeof category === 'string') items = items.filter((i: any) => i.category === category);
   if (profileId && typeof profileId === 'string') items = items.filter((i: any) => i.profileId === profileId);
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, count: items.length, categories: PORTFOLIO_CATEGORIES, items });
 });
 
@@ -349,6 +378,7 @@ app.get('/api/portfolio/stats', (_req: Request, res: Response) => {
     byCategory[item.category] = (byCategory[item.category] || 0) + 1;
     byPriority[item.priority] = (byPriority[item.priority] || 0) + 1;
   }
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, total: items.length, byCategory, byPriority, averageScore: items.length > 0 ? Math.round(items.reduce((s: number, i: any) => s + i.score, 0) / items.length) : 0 });
 });
 
@@ -379,6 +409,7 @@ app.post('/api/portfolio', (req: Request, res: Response) => {
     profileName: profileName || ''
   };
   portfolio.set(item.id, item);
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, item });
 });
 
@@ -388,6 +419,7 @@ app.put('/api/portfolio/:id/score', (req: Request, res: Response) => {
   const ns = typeof req.body.score === 'number' ? Math.max(0, Math.min(100, req.body.score)) : item.score;
   const updated = { ...item, score: ns, priority: scoreToPriority(ns) };
   portfolio.set(req.params.id, updated);
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, item: updated });
 });
 
@@ -397,6 +429,7 @@ app.put('/api/portfolio/:id/category', (req: Request, res: Response) => {
   const validCat = PORTFOLIO_CATEGORIES.includes(req.body.category) ? req.body.category : item.category;
   const updated = { ...item, category: validCat };
   portfolio.set(req.params.id, updated);
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, item: updated });
 });
 
@@ -405,17 +438,20 @@ app.put('/api/portfolio/:id/profile', (req: Request, res: Response) => {
   if (!item) { res.status(404).json({ error: 'No encontrado' }); return; }
   const updated = { ...item, profileId: req.body.profileId || item.profileId, profileName: req.body.profileName || item.profileName };
   portfolio.set(req.params.id, updated);
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, item: updated });
 });
 
 app.delete('/api/portfolio/:id', (req: Request, res: Response) => {
   if (!portfolio.has(req.params.id)) { res.status(404).json({ error: 'No encontrado' }); return; }
   portfolio.delete(req.params.id);
+  res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, message: 'Eliminado' });
 });
 
 // ==========================================
 // STATIC - Frontend desde varias rutas posibles
+// Con cache-busting headers
 // ==========================================
 const staticPaths = [
   path.join(__dirname, '../../frontend'),
@@ -431,8 +467,29 @@ for (const p of staticPaths) {
   }
 }
 if (frontendPath) {
-  app.use(express.static(frontendPath));
+  // Cache-busting: no-cache para index.html, 1h para assets estáticos
+  app.use((req, res, next) => {
+    if (req.path === '/' || req.path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+    next();
+  });
+  app.use(express.static(frontendPath, {
+    maxAge: '1h',
+    setHeaders: (res, path) => {
+      if (path.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  }));
   app.get('*', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(frontendPath, 'index.html'));
   });
   console.log(`[STATIC] Frontend servido desde: ${frontendPath}`);
@@ -447,6 +504,6 @@ if (frontendPath) {
 // START
 // ==========================================
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 AssetPark API en puerto ${PORT}`);
+  console.log(`🚀 AssetPark API v4.0.0 en puerto ${PORT}`);
   console.log(`📋 /api/health | /api/health/external | /api/profiles | /api/opportunities/run | /api/portfolio/*`);
 });
