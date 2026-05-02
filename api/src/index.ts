@@ -508,3 +508,4 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`📋 /api/health | /api/health/external | /api/profiles | /api/opportunities/run | /api/portfolio/*`);
 });
 // v4.0 deploy 20260501-2329
+// v4.1 deploy 20260501-2344
