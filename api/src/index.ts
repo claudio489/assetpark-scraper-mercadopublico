@@ -1,11 +1,12 @@
 // ==========================================
-// API - Backend proxy para AssetPark Scraper
-// Scrapea MercadoPublico.cl y devuelve datos enriquecidos
+// API v5.0 - AssetPark Scraper MercadoPublico
+// Persistencia historica 30 dias + Novedades + Multi-request
 // ==========================================
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 
 const app = express();
 app.use(cors());
@@ -14,22 +15,95 @@ app.use(express.json());
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const TICKET = process.env.MP_TICKET || '8BBCAB7E-0911-4E40-BD68-C56A0A33FF78';
 const MP_API = 'https://api.mercadopublico.cl/servicios/v1/publico';
+const DATA_DIR = path.join(process.cwd(), 'data');
+const HIST_FILE = path.join(DATA_DIR, 'historial.json');
+const MAX_HIST_DAYS = 30;
+
+// Asegurar directorio de datos existe
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // ==========================================
-// PROFILES - Con negative keywords (excluded)
+// HISTORIAL PERSISTENTE (disco)
+// Estructura: { [id]: { ...licitacion, firstSeen, lastSeen, profiles:[] } }
+// ==========================================
+interface HistEntry {
+  id: string;
+  title: string;
+  description: string;
+  entity: string;
+  region: string;
+  amount: number;
+  date: string;
+  closingDate: string;
+  status: string;
+  category: string;
+  url: string;
+  source: string;
+  firstSeen: string;
+  lastSeen: string;
+  profiles: string[];
+  score?: number;
+  priority?: string;
+  recommendation?: string;
+  businessScore?: number;
+  businessReasons?: string[];
+  matchedKeywords?: string[];
+}
+
+let historial: Record<string, HistEntry> = {};
+
+function loadHistorial() {
+  try {
+    if (fs.existsSync(HIST_FILE)) {
+      const raw = fs.readFileSync(HIST_FILE, 'utf-8');
+      historial = JSON.parse(raw);
+      const keys = Object.keys(historial);
+      console.log(`[HIST] ${keys.length} licitaciones cargadas`);
+      // Purge viejas (>30 dias)
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - MAX_HIST_DAYS);
+      let purged = 0;
+      for (const k of keys) {
+        const last = new Date(historial[k].lastSeen);
+        if (last < cutoff) { delete historial[k]; purged++; }
+      }
+      if (purged > 0) {
+        console.log(`[HIST] Purge: ${purged} licitaciones eliminadas (>${MAX_HIST_DAYS} dias)`);
+        saveHistorial();
+      }
+    }
+  } catch (e) {
+    console.log('[HIST] Error cargando:', (e as Error).message);
+    historial = {};
+  }
+}
+
+function saveHistorial() {
+  try {
+    fs.writeFileSync(HIST_FILE, JSON.stringify(historial, null, 0), 'utf-8');
+  } catch (e) {
+    console.log('[HIST] Error guardando:', (e as Error).message);
+  }
+}
+
+// Cargar al iniciar
+loadHistorial();
+
+// ==========================================
+// PROFILES
 // ==========================================
 const PROFILES = [
   { id: 'constructora', name: 'Constructora / Obras Civiles', keywords: ['construccion','obra civil','obra publica','infraestructura','edificacion','puente','camino','pavimentacion','hormigon','asfalto','movimiento de tierra','demolicion','excavacion','terraplen','estructura'], excluded: ['oficina','mueble','computador','impresora','papeleria'] },
-  { id: 'tecnologia', name: 'Tecnología / Software / TI', keywords: ['software','desarrollo software','sistema informatico','plataforma digital','aplicacion movil','ciberseguridad','hosting cloud','data center','red de datos','telecomunicaciones'], excluded: ['construccion','hormigon','asfalto','medico','hospital'] },
-  { id: 'salud', name: 'Salud / Insumos Médicos', keywords: ['insumos medicos','equipamiento medico','medicamentos','material de curacion','material esteril','instrumental quirurgico','equipo de rayos x','tomografo','resonancia magnetica'], excluded: ['oficina','papeleria','computador','mueble','limpieza'] },
-  { id: 'imprenta', name: 'Imprenta / Gráfica / Publicidad', keywords: ['imprenta','impresion offset','impresion digital','pendon pvc','banner publicitario','gigantografia','letrero luminoso','rotulacion vehicular','troquelado','corte laser','vinilo de corte','serigrafia'], excluded: ['medico','hospital','insumos medicos','quirurgico'] },
-  { id: 'hormigon', name: 'Preformado de Hormigón', keywords: ['hormigon prefabricado','hormigon premezclado','concreto prefabricado','concreto premezclado','postes hormigon','vigas hormigon','losas hormigon','paneles hormigon','adoquines hormigon','adoquin hormigon','pavimento hormigon','pavimento intertrabado','tubos hormigon','ductos hormigon','camaras inspeccion','pozos hormigon','bordillos','elementos prefabricados','bovedilla','arqueta','concreto reciclado','base granular'], excluded: ['oficina','mueble','computador','impresora','papeleria','software','camara fotografica'] },
+  { id: 'tecnologia', name: 'Tecnologia / Software / TI', keywords: ['software','desarrollo software','sistema informatico','plataforma digital','aplicacion movil','ciberseguridad','hosting cloud','data center','red de datos','telecomunicaciones'], excluded: ['construccion','hormigon','asfalto','medico','hospital'] },
+  { id: 'salud', name: 'Salud / Insumos Medicos', keywords: ['insumos medicos','equipamiento medico','medicamentos','material de curacion','material esteril','instrumental quirurgico','equipo de rayos x','tomografo','resonancia magnetica'], excluded: ['oficina','papeleria','computador','mueble','limpieza'] },
+  { id: 'imprenta', name: 'Imprenta / Grafica / Publicidad', keywords: ['imprenta','impresion offset','impresion digital','pendon pvc','banner publicitario','gigantografia','letrero luminoso','rotulacion vehicular','troquelado','corte laser','vinilo de corte','serigrafia'], excluded: ['medico','hospital','insumos medicos','quirurgico'] },
+  { id: 'hormigon', name: 'Preformado de Hormigon', keywords: ['hormigon','concreto','prefabricado','premezclado','postes','vigas','losas','paneles','adoquines','adoquin','pavimento','intertrabado','tubos','ductos','camara inspeccion','pozos','bordillos','bovedilla','arqueta','base granular','adoquinado','baldosas','canaletas','cunetas','veredas','aceras','placas','elementos preformados'], excluded: ['oficina','mueble','computador','impresora','papeleria','software','camara fotografica'] },
   { id: 'general', name: 'Perfil General', keywords: [], excluded: [] },
-  { id: 'buceo', name: 'Importación Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','buceo tecnico','equipo de buceo','tanque de buceo','regulador de buceo','traje de buceo','mascara de buceo','aletas de buceo','buceo profesional','buceo industrial','escafandra autonoma'], excluded: ['medico','hospital','insumos medicos','paciente','quirurgico'] }
+  { id: 'buceo', name: 'Importacion Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','buceo tecnico','equipo de buceo','tanque de buceo','regulador de buceo','traje de buceo','mascara de buceo','aletas de buceo','buceo profesional','buceo industrial','escafandra autonoma'], excluded: ['medico','hospital','insumos medicos','paciente','quirurgico'] }
 ];
 
 // ==========================================
-// UTILS - HTTP con timeout
+// UTILS
 // ==========================================
 function httpGet(url: string, timeoutMs = 20000): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -56,51 +130,106 @@ function fmtAmount(amount: number): string {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
 }
 
+function formatDateMP(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}${mm}${yyyy}`;
+}
+
+// Batch promises: ejecuta N promesas en paralelo, espera, sigue con las siguientes N
+async function batchPromises<T>(promises: (() => Promise<T>)[], batchSize: number): Promise<T[]> {
+  const results: T[] = [];
+  for (let i = 0; i < promises.length; i += batchSize) {
+    const batch = promises.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(p => p()));
+    results.push(...batchResults);
+  }
+  return results;
+}
+
 // ==========================================
-// SCRAPER - Lista básica de MercadoPublico
+// SCRAPER - Multi-request: 30 dias con batching
 // ==========================================
-async function scrapeMercadoPublico(profileKeywords: string[], excludedKeywords: string[] = [], limit = 20): Promise<any[]> {
+async function fetchActivasByDate(fechaStr: string | null, ticket: string): Promise<any[]> {
   try {
-    const url = `${MP_API}/licitaciones.json?estado=activas&ticket=${TICKET}`;
+    const url = fechaStr
+      ? `${MP_API}/licitaciones.json?fecha=${fechaStr}&estado=activas&ticket=${ticket}`
+      : `${MP_API}/licitaciones.json?estado=activas&ticket=${ticket}`;
     const data = await httpGet(url, 20000);
-    
-    if (!data.Listado || !Array.isArray(data.Listado) || data.Listado.length === 0) {
-      console.log('[Scraper] API vacia');
-      return [];
+    return data.Listado || [];
+  } catch { return []; }
+}
+
+async function scrapeMercadoPublico(
+  profileKeywords: string[],
+  excludedKeywords: string[] = [],
+  limit = 50
+): Promise<any[]> {
+  try {
+    const requests: (() => Promise<any[]>)[] = [];
+
+    // Request principal
+    requests.push(() => fetchActivasByDate(null, TICKET));
+
+    // Requests por los ultimos 30 dias
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const fechaStr = formatDateMP(d);
+      requests.push(() => fetchActivasByDate(fechaStr, TICKET));
     }
-    
-    let list = data.Listado;
-    
+
+    // Ejecutar en batches de 5 para no saturar
+    const allLists = await batchPromises(requests, 5);
+    const totalRaw = allLists.reduce((s, l) => s + l.length, 0);
+    console.log(`[Scraper] Total raw: ${totalRaw} licitaciones`);
+
+    // De-duplicar
+    const seen = new Set<string>();
+    let combined: any[] = [];
+    for (const list of allLists) {
+      for (const lic of list) {
+        const code = lic.CodigoExterno || '';
+        if (code && !seen.has(code)) {
+          seen.add(code);
+          combined.push(lic);
+        }
+      }
+    }
+    console.log(`[Scraper] Unicas: ${combined.length}`);
+
     // Filtrar por keywords positivas
     if (profileKeywords.length > 0) {
       const kw = profileKeywords.map(k => k.toLowerCase());
-      list = list.filter((lic: any) => {
+      const before = combined.length;
+      combined = combined.filter((lic: any) => {
         const text = `${lic.Nombre || ''} ${lic.Descripcion || ''}`.toLowerCase();
         return kw.some(w => text.includes(w));
       });
+      console.log(`[Scraper] Keywords: ${before} -> ${combined.length}`);
     }
-    
-    // EXCLUIR por keywords negativas (limpiar ruido)
+
+    // Excluir por keywords negativas
     if (excludedKeywords.length > 0) {
       const ex = excludedKeywords.map(k => k.toLowerCase());
-      const before = list.length;
-      list = list.filter((lic: any) => {
+      const before = combined.length;
+      combined = combined.filter((lic: any) => {
         const text = `${lic.Nombre || ''} ${lic.Descripcion || ''}`.toLowerCase();
         return !ex.some(w => text.includes(w));
       });
-      const after = list.length;
-      if (before > after) {
-        console.log(`[Scraper] Excluidas ${before - after} licitaciones por keywords negativas`);
+      if (before > combined.length) {
+        console.log(`[Scraper] Excluidas: ${before - combined.length}`);
       }
     }
-    
-    return list.slice(0, limit).map((lic: any) => {
+
+    return combined.slice(0, limit).map((lic: any) => {
       const comprador = lic.Comprador || {};
       const fechas = lic.Fechas || {};
       return {
         id: lic.CodigoExterno || '',
         title: lic.Nombre || '',
-        description: lic.Nombre || '',
+        description: lic.Descripcion || lic.Nombre || '',
         entity: comprador.NombreOrganismo || comprador.NombreUnidad || 'Organismo no especificado',
         region: parseRegion(comprador.RegionUnidad),
         amount: typeof lic.MontoEstimado === 'number' ? lic.MontoEstimado : 0,
@@ -119,43 +248,27 @@ async function scrapeMercadoPublico(profileKeywords: string[], excludedKeywords:
 }
 
 // ==========================================
-// SCORING - Base por matching de keywords (porcentaje)
+// SCORING
 // ==========================================
 function calculateScore(title: string, description: string, keywords: string[]) {
-  // Perfil General (sin keywords) = neutral para que el usuario decida
   if (keywords.length === 0) {
     return { score: 50, priority: 'media' as const, matchedKeywords: ['General'], matchScore: 50 };
   }
-
   const text = (title + ' ' + description).toLowerCase();
   const matched: string[] = [];
   for (const k of keywords) {
-    if (text.includes(k.toLowerCase())) {
-      matched.push(k);
-    }
+    if (text.includes(k.toLowerCase())) matched.push(k);
   }
-
-  // Puntuación porcentual basada en cuántos keywords matchean
   const matchRate = keywords.length > 0 ? matched.length / keywords.length : 0;
   let score = Math.round(matchRate * 100);
-
-  // Bonus si hay al menos un match parcial
   if (matched.length > 0 && matched.length < keywords.length) {
-    score = Math.min(100, score + 12); // +12 bonus por match parcial
+    score = Math.min(100, score + 12);
   }
-
   const priority = score >= 80 ? 'alta' : score >= 60 ? 'media' : 'baja';
   return { score, priority, matchedKeywords: matched, matchScore: score };
 }
 
-// ==========================================
-// ANALYZER - Scoring avanzado con criterios de negocio
-// ==========================================
-
-interface BusinessCriteria {
-  minAmount: number;
-  optimalAmount: number;
-}
+interface BusinessCriteria { minAmount: number; optimalAmount: number; }
 
 const BUSINESS_CRITERIA: Record<string, BusinessCriteria> = {
   constructora: { minAmount: 10_000_000, optimalAmount: 500_000_000 },
@@ -171,15 +284,14 @@ function calculateBusinessScore(amount: number, profileId: string): { score: num
   const criteria = BUSINESS_CRITERIA[profileId] || BUSINESS_CRITERIA.general;
   const reasons: string[] = [];
   let score = 50;
-
   if (amount === 0) {
-    reasons.push('Monto oculto en licitación activa — revisar en ficha de MercadoPublico');
-    score = 60; // Neutral: no penalizar, evaluar por otros criterios
+    reasons.push('Monto oculto en licitacion activa — revisar en ficha de MercadoPublico');
+    score = 60;
   } else if (amount < criteria.minAmount) {
-    reasons.push(`Monto ${fmtMoney(amount)} está por debajo del mínimo operativo ${fmtMoney(criteria.minAmount)} para este rubro`);
+    reasons.push(`Monto ${fmtMoney(amount)} esta por debajo del minimo operativo ${fmtMoney(criteria.minAmount)} para este rubro`);
     score = 20;
   } else if (amount >= criteria.optimalAmount) {
-    reasons.push(`Monto ${fmtMoney(amount)} supera el óptimo ${fmtMoney(criteria.optimalAmount)}`);
+    reasons.push(`Monto ${fmtMoney(amount)} supera el optimo ${fmtMoney(criteria.optimalAmount)}`);
     score = 95;
   } else {
     const ratio = (amount - criteria.minAmount) / (criteria.optimalAmount - criteria.minAmount);
@@ -196,12 +308,6 @@ function fmtMoney(n: number): string {
   return `$${n}`;
 }
 
-// ==========================================
-// PORTFOLIO (in-memory)
-// ==================================================
-const portfolio = new Map<string, any>();
-const PORTFOLIO_CATEGORIES = ['Construcción', 'Montaje', 'Mantención', 'Suministro EPP', 'Software a la medida'];
-
 function scoreToPriority(score: number): string {
   if (score >= 80) return 'alta';
   if (score >= 60) return 'media';
@@ -209,23 +315,29 @@ function scoreToPriority(score: number): string {
 }
 
 // ==========================================
+// PORTFOLIO (in-memory)
+// ==========================================
+const portfolio = new Map<string, any>();
+const PORTFOLIO_CATEGORIES = ['Construccion', 'Montaje', 'Mantencion', 'Suministro EPP', 'Software a la medida'];
+
+// ==========================================
 // ENDPOINTS
 // ==========================================
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ status: 'ok', service: 'assetpark-scraper', version: '4.1.0' });
+  const histKeys = Object.keys(historial);
+  res.json({ status: 'ok', service: 'assetpark-scraper', version: '5.0.0', historialSize: histKeys.length });
 });
 
 app.get('/api/health/external', async (_req: Request, res: Response) => {
   try {
     const data = await httpGet(`${MP_API}/licitaciones.json?estado=activas&ticket=${TICKET}`, 10000);
-    const count = data.Listado?.length || 0;
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, mercadoPublico: true, count, message: `Conectado - ${count} activas` });
+    res.json({ success: true, mercadoPublico: true, count: data.Listado?.length || 0 });
   } catch (err) {
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: false, mercadoPublico: false, message: (err as Error).message });
+    res.json({ success: false, message: (err as Error).message });
   }
 });
 
@@ -234,52 +346,37 @@ app.get('/api/profiles', (_req: Request, res: Response) => {
   res.json({ success: true, profiles: PROFILES });
 });
 
-app.get('/api/profile/:id', (req: Request, res: Response) => {
-  const p = PROFILES.find(x => x.id === req.params.id);
-  if (!p) { res.status(404).json({ error: 'No encontrado' }); return; }
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, profile: p });
-});
-
 // ---- PIPELINE ----
 
 let lastResult: any = null;
 
 app.post('/api/opportunities/run', async (req: Request, res: Response) => {
-  const { profileId = 'general', limit = 20 } = req.body || {};
+  const { profileId = 'general', limit = 50 } = req.body || {};
   const profile = PROFILES.find(p => p.id === profileId) || PROFILES[4];
-  
-  console.log(`[API] Pipeline iniciado - perfil: ${profile.id}`);
-  
+  const now = new Date().toISOString();
+
+  console.log(`[API] Pipeline v5 - perfil: ${profile.id}, limit: ${limit}`);
+
   try {
-    // Timeout global de 30 segundos
     const pipelinePromise = scrapeMercadoPublico(profile.keywords, (profile as any).excluded || [], limit || 50);
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Pipeline timeout')), 30000);
+      setTimeout(() => reject(new Error('Pipeline timeout')), 60000); // 60s para 31 requests
     });
-    
+
     const raw = await Promise.race([pipelinePromise, timeoutPromise]);
-    
-    // Scoring + Business Analysis
+
+    // Scoring
     const opportunities = raw.map((op: any) => {
       const baseSc = calculateScore(op.title, op.description, profile.keywords);
       const bizSc = calculateBusinessScore(op.amount, profile.id);
-      
-      // Ponderación: 60% base + 40% negocio (más peso al matching de perfil)
       const finalScore = Math.round(baseSc.score * 0.60 + bizSc.score * 0.40);
-      
-      // Umbrales más realistas para evitar que todo sea EVITAR cuando monto=0
       let recommendation: string;
       if (finalScore >= 60 && bizSc.score >= 50) recommendation = 'POSTULAR';
       else if (finalScore >= 40 && bizSc.score >= 30) recommendation = 'EVALUAR';
       else recommendation = 'EVITAR';
-      
-      // Perfil General: forzar EVALUAR para que el usuario decida manualmente
-      if (profileId === 'general') {
-        recommendation = 'EVALUAR';
-      }
-      
-      return {
+      if (profileId === 'general') recommendation = 'EVALUAR';
+
+      const scored = {
         ...op,
         score: finalScore,
         priority: finalScore >= 80 ? 'alta' : finalScore >= 60 ? 'media' : 'baja',
@@ -289,76 +386,151 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
         businessReasons: bizSc.reasons,
         recommendation
       };
+
+      // Guardar en historial persistente
+      const existing = historial[op.id];
+      if (!existing) {
+        historial[op.id] = {
+          ...scored,
+          firstSeen: now,
+          lastSeen: now,
+          profiles: [profileId]
+        };
+      } else {
+        existing.lastSeen = now;
+        existing.status = op.status;
+        existing.closingDate = op.closingDate;
+        if (!existing.profiles.includes(profileId)) existing.profiles.push(profileId);
+      }
+
+      return scored;
     });
-    
+
+    saveHistorial();
+
+    // Detectar novedades (aparecidas en las ultimas 24h)
+    const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const novedades = opportunities.filter((o: any) => {
+      const entry = historial[o.id];
+      return entry && entry.firstSeen >= hace24h;
+    });
+
     const stats = {
       total: opportunities.length,
       alta: opportunities.filter((o: any) => o.priority === 'alta').length,
       media: opportunities.filter((o: any) => o.priority === 'media').length,
       baja: opportunities.filter((o: any) => o.priority === 'baja').length,
-      averageScore: opportunities.length > 0 ? Math.round(opportunities.reduce((s: number, o: any) => s + o.score, 0) / opportunities.length) : 0
+      novedades: novedades.length,
+      historialTotal: Object.keys(historial).length
     };
-    
-    lastResult = { profileId, runAt: new Date().toISOString(), stats, opportunities };
-    
+
+    lastResult = { profileId, runAt: now, stats, opportunities };
+
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities });
-    console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades`);
-    
+    console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades, ${novedades.length} novedades, ${stats.historialTotal} en historial`);
+
   } catch (error) {
     console.error('[API] Pipeline error:', (error as Error).message);
     res.setHeader('Cache-Control', 'no-store');
-    res.json({
-      success: true,
-      profileId: profile.id,
-      profileName: profile.name,
-      total: 0, alta: 0, media: 0, baja: 0, averageScore: 0,
-      opportunities: [],
-      warning: `Error: ${(error as Error).message}. MercadoPublico puede estar bloqueando requests desde cloud.`
-    });
+    res.json({ success: false, error: (error as Error).message });
   }
 });
 
 app.get('/api/opportunities', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
   if (!lastResult) {
-    res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, count: 0, opportunities: [], warning: 'Ejecute POST /api/opportunities/run primero' });
+    res.json({ success: true, count: 0, opportunities: [] });
     return;
   }
+  res.json({ success: true, ...lastResult });
+});
+
+// ---- HISTORIAL (30 dias) ----
+
+app.get('/api/opportunities/historial', (req: Request, res: Response) => {
+  const { profileId, search, days = '30' } = req.query;
+  const maxDays = parseInt(days as string) || 30;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - maxDays);
+
+  let items = Object.values(historial)
+    .filter((h: HistEntry) => new Date(h.lastSeen) >= cutoff)
+    .sort((a: HistEntry, b: HistEntry) => new Date(b.firstSeen).getTime() - new Date(a.firstSeen).getTime());
+
+  if (profileId && typeof profileId === 'string') {
+    items = items.filter((h: HistEntry) => h.profiles && h.profiles.includes(profileId));
+  }
+
+  if (search && typeof search === 'string') {
+    const s = search.toLowerCase();
+    items = items.filter((h: HistEntry) =>
+      (h.title || '').toLowerCase().includes(s) ||
+      (h.entity || '').toLowerCase().includes(s) ||
+      (h.region || '').toLowerCase().includes(s)
+    );
+  }
+
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, count: lastResult.opportunities.length, profileId: lastResult.profileId, opportunities: lastResult.opportunities });
+  res.json({ success: true, count: items.length, maxDays, items });
+});
+
+// ---- NOVEDADES (ultimas 24h) ----
+
+app.get('/api/opportunities/novedades', (_req: Request, res: Response) => {
+  const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const items = Object.values(historial)
+    .filter((h: HistEntry) => h.firstSeen >= hace24h)
+    .sort((a: HistEntry, b: HistEntry) => new Date(b.firstSeen).getTime() - new Date(a.firstSeen).getTime());
+
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, count: items.length, periodo: '24h', items });
+});
+
+// ---- POR VENCER (cierran en 7 dias) ----
+
+app.get('/api/opportunities/vencer', (_req: Request, res: Response) => {
+  const hoy = new Date();
+  const en7dias = new Date();
+  en7dias.setDate(en7dias.getDate() + 7);
+
+  const items = Object.values(historial)
+    .filter((h: HistEntry) => {
+      if (!h.closingDate) return false;
+      const cierre = new Date(h.closingDate);
+      return cierre >= hoy && cierre <= en7dias;
+    })
+    .sort((a: HistEntry, b: HistEntry) => new Date(a.closingDate).getTime() - new Date(b.closingDate).getTime());
+
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, count: items.length, periodo: '7 dias', items });
 });
 
 app.get('/api/opportunities/stats', (_req: Request, res: Response) => {
-  if (!lastResult) {
-    res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, stats: { total: 0, alta: 0, media: 0, baja: 0, averageScore: 0, postular: 0, evaluar: 0, evitar: 0, totalAmount: 0, amountsByCategory: {} } });
-    return;
-  }
-  const ops = lastResult.opportunities;
+  const ops = lastResult?.opportunities || [];
   const amountsByCategory: Record<string, number> = {};
   let totalAmount = 0;
   for (const op of ops) {
-    if (op.amount > 0) {
-      totalAmount += op.amount;
-      const cat = op.category || 'Sin categoría';
-      amountsByCategory[cat] = (amountsByCategory[cat] || 0) + op.amount;
-    }
+    if (op.amount > 0) { totalAmount += op.amount; amountsByCategory[op.category || 'Sin categoria'] = (amountsByCategory[op.category || 'Sin categoria'] || 0) + op.amount; }
   }
-  const stats = {
-    total: ops.length,
-    alta: ops.filter((o: any) => o.priority === 'alta').length,
-    media: ops.filter((o: any) => o.priority === 'media').length,
-    baja: ops.filter((o: any) => o.priority === 'baja').length,
-    averageScore: ops.length > 0 ? Math.round(ops.reduce((s: number, o: any) => s + o.score, 0) / ops.length) : 0,
-    postular: ops.filter((o: any) => o.recommendation === 'POSTULAR').length,
-    evaluar: ops.filter((o: any) => o.recommendation === 'EVALUAR').length,
-    evitar: ops.filter((o: any) => o.recommendation === 'EVITAR').length,
-    totalAmount,
-    amountsByCategory
-  };
+  const hace24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, stats });
+  res.json({
+    success: true,
+    stats: {
+      total: ops.length,
+      alta: ops.filter((o: any) => o.priority === 'alta').length,
+      media: ops.filter((o: any) => o.priority === 'media').length,
+      baja: ops.filter((o: any) => o.priority === 'baja').length,
+      postular: ops.filter((o: any) => o.recommendation === 'POSTULAR').length,
+      evaluar: ops.filter((o: any) => o.recommendation === 'EVALUAR').length,
+      evitar: ops.filter((o: any) => o.recommendation === 'EVITAR').length,
+      totalAmount,
+      amountsByCategory,
+      historialTotal: Object.keys(historial).length,
+      novedades24h: Object.values(historial).filter((h: HistEntry) => h.firstSeen >= hace24h).length
+    }
+  });
 });
 
 // ---- PORTFOLIO ----
@@ -372,76 +544,23 @@ app.get('/api/portfolio', (req: Request, res: Response) => {
   res.json({ success: true, count: items.length, categories: PORTFOLIO_CATEGORIES, items });
 });
 
-app.get('/api/portfolio/stats', (_req: Request, res: Response) => {
-  const items = Array.from(portfolio.values());
-  const byCategory: Record<string, number> = {};
-  const byPriority: Record<string, number> = {};
-  for (const item of items) {
-    byCategory[item.category] = (byCategory[item.category] || 0) + 1;
-    byPriority[item.priority] = (byPriority[item.priority] || 0) + 1;
-  }
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, total: items.length, byCategory, byPriority, averageScore: items.length > 0 ? Math.round(items.reduce((s: number, i: any) => s + i.score, 0) / items.length) : 0 });
-});
-
 app.post('/api/portfolio', (req: Request, res: Response) => {
   const { opportunity, category, notes, profileId, profileName } = req.body || {};
   if (!opportunity || !opportunity.id) { res.status(400).json({ error: 'Falta opportunity.id' }); return; }
-  const validCat = PORTFOLIO_CATEGORIES.includes(category) ? category : 'Sin categoría';
   const item = {
     id: `${opportunity.id}-${Date.now()}`,
     opportunityId: opportunity.id,
-    title: opportunity.title || '',
-    entity: opportunity.entity || '',
-    region: opportunity.region || '',
-    amount: opportunity.amount || 0,
-    url: opportunity.url || '',
-    date: opportunity.date || '',
-    status: opportunity.status || '',
-    category: validCat,
-    description: opportunity.description || '',
-    score: opportunity.score || 50,
-    priority: scoreToPriority(opportunity.score || 50),
-    matchedKeywords: opportunity.matchedKeywords || [],
-    matchScore: opportunity.matchScore || 0,
-    source: opportunity.source || '',
-    savedAt: new Date().toISOString(),
-    notes: notes || '',
-    profileId: profileId || '',
-    profileName: profileName || ''
+    title: opportunity.title || '', entity: opportunity.entity || '', region: opportunity.region || '',
+    amount: opportunity.amount || 0, url: opportunity.url || '', date: opportunity.date || '',
+    status: opportunity.status || '', category: PORTFOLIO_CATEGORIES.includes(category) ? category : 'Sin categoria',
+    description: opportunity.description || '', score: opportunity.score || 50,
+    priority: scoreToPriority(opportunity.score || 50), matchedKeywords: opportunity.matchedKeywords || [],
+    matchScore: opportunity.matchScore || 0, source: opportunity.source || '',
+    savedAt: new Date().toISOString(), notes: notes || '', profileId: profileId || '', profileName: profileName || ''
   };
   portfolio.set(item.id, item);
   res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, item });
-});
-
-app.put('/api/portfolio/:id/score', (req: Request, res: Response) => {
-  const item = portfolio.get(req.params.id);
-  if (!item) { res.status(404).json({ error: 'No encontrado' }); return; }
-  const ns = typeof req.body.score === 'number' ? Math.max(0, Math.min(100, req.body.score)) : item.score;
-  const updated = { ...item, score: ns, priority: scoreToPriority(ns) };
-  portfolio.set(req.params.id, updated);
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, item: updated });
-});
-
-app.put('/api/portfolio/:id/category', (req: Request, res: Response) => {
-  const item = portfolio.get(req.params.id);
-  if (!item) { res.status(404).json({ error: 'No encontrado' }); return; }
-  const validCat = PORTFOLIO_CATEGORIES.includes(req.body.category) ? req.body.category : item.category;
-  const updated = { ...item, category: validCat };
-  portfolio.set(req.params.id, updated);
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, item: updated });
-});
-
-app.put('/api/portfolio/:id/profile', (req: Request, res: Response) => {
-  const item = portfolio.get(req.params.id);
-  if (!item) { res.status(404).json({ error: 'No encontrado' }); return; }
-  const updated = { ...item, profileId: req.body.profileId || item.profileId, profileName: req.body.profileName || item.profileName };
-  portfolio.set(req.params.id, updated);
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, item: updated });
 });
 
 app.delete('/api/portfolio/:id', (req: Request, res: Response) => {
@@ -452,8 +571,7 @@ app.delete('/api/portfolio/:id', (req: Request, res: Response) => {
 });
 
 // ==========================================
-// STATIC - Frontend desde varias rutas posibles
-// Con cache-busting headers
+// STATIC
 // ==========================================
 const staticPaths = [
   path.join(__dirname, '../../frontend'),
@@ -463,16 +581,12 @@ const staticPaths = [
 ];
 let frontendPath = '';
 for (const p of staticPaths) {
-  if (require('fs').existsSync(path.join(p, 'index.html'))) {
-    frontendPath = p;
-    break;
-  }
+  if (fs.existsSync(path.join(p, 'index.html'))) { frontendPath = p; break; }
 }
 if (frontendPath) {
-  // Cache-busting: no-cache para index.html, 1h para assets estáticos
   app.use((req, res, next) => {
     if (req.path === '/' || req.path.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
@@ -482,30 +596,24 @@ if (frontendPath) {
     maxAge: '1h',
     setHeaders: (res, path) => {
       if (path.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
       }
     }
   }));
   app.get('*', (_req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(frontendPath, 'index.html'));
   });
-  console.log(`[STATIC] Frontend servido desde: ${frontendPath}`);
+  console.log(`[STATIC] Frontend: ${frontendPath}`);
 } else {
-  console.log('[STATIC] WARNING: No se encontro frontend/index.html');
   app.get('/', (_req: Request, res: Response) => {
-    res.json({ status: 'AssetPark API', message: 'Frontend no disponible. Usa /api/health' });
+    res.json({ status: 'AssetPark API v5', message: 'Frontend no disponible' });
   });
 }
 
-// ==========================================
-// START
-// ==========================================
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 AssetPark API v4.0.0 en puerto ${PORT}`);
-  console.log(`📋 /api/health | /api/health/external | /api/profiles | /api/opportunities/run | /api/portfolio/*`);
+  console.log(`AssetPark API v5.0.0 en puerto ${PORT}`);
+  console.log(`Historial: ${Object.keys(historial).length} licitaciones persistidas`);
 });

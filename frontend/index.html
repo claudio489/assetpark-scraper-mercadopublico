@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>AssetPark Licitaciones v4.1</title>
+<title>AssetPark Licitaciones v5.0</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
 body{background:linear-gradient(135deg,#0c1923 0%,#0f2235 50%,#0c1923 100%);color:#e2e8f0;min-height:100vh;padding:24px}
@@ -18,6 +18,13 @@ h1{font-size:1.6rem;font-weight:700;background:linear-gradient(90deg,#00d4ff,#4f
 .subtitle{color:#6b8fa3;font-size:.85rem;margin-bottom:20px}
 .version{color:#4a6a7a;font-size:.7rem;margin-left:auto;background:rgba(0,0,0,.2);padding:3px 10px;border-radius:12px}
 
+/* NAV TABS */
+.nav-tabs{display:flex;gap:4px;margin-bottom:16px;padding:4px;background:rgba(26,42,58,.6);border-radius:12px;border:1px solid rgba(0,212,255,.1)}
+.nav-tab{background:transparent;border:none;color:#6b8fa3;padding:10px 18px;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s}
+.nav-tab:hover{background:rgba(0,212,255,.08);color:#8ab4c7}
+.nav-tab.on{background:linear-gradient(135deg,#00a8ff,#0066cc);color:#fff;box-shadow:0 4px 15px rgba(0,168,255,.25)}
+
+/* CONTROLS */
 .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;padding:16px;background:rgba(26,42,58,.6);border-radius:12px;border:1px solid rgba(0,212,255,.1);backdrop-filter:blur(10px)}
 .ctrl-group{display:flex;align-items:center;gap:8px}
 .ctrl-group label{font-weight:600;color:#8ab4c7;font-size:.85rem;text-transform:uppercase;letter-spacing:.5px}
@@ -34,6 +41,7 @@ select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,2
 .search-box:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,.15)}
 .search-box::placeholder{color:#5a7a8f}
 
+/* DASHBOARD */
 .dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px}
 .dash-card{background:linear-gradient(145deg,rgba(26,42,58,.8),rgba(20,35,50,.8));padding:16px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,.05);transition:all .2s;position:relative;overflow:hidden}
 .dash-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3);border-color:rgba(0,212,255,.2)}
@@ -46,6 +54,8 @@ select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,2
 .dash-card.evaluar::before{background:linear-gradient(90deg,#ffa502,#fbbf24)}
 .dash-card.evitar::before{background:linear-gradient(90deg,#ff4757,#f87171)}
 .dash-card.monto::before{background:linear-gradient(90deg,#a78bfa,#c4b5fd)}
+.dash-card.novedades::before{background:linear-gradient(90deg,#00d4ff,#ff4757)}
+.dash-card.historial::before{background:linear-gradient(90deg,#a78bfa,#00d4ff)}
 .dash-num{font-size:1.7rem;font-weight:800;margin-top:4px}
 .dash-num.total{color:#00d4ff}
 .dash-num.alta{color:#ff4757}
@@ -55,8 +65,11 @@ select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,2
 .dash-num.evaluar{color:#ffa502}
 .dash-num.evitar{color:#ff4757}
 .dash-num.monto{color:#a78bfa}
+.dash-num.novedades{color:#ff6b81}
+.dash-num.historial{color:#a78bfa}
 .dash-label{font-size:.75rem;color:#6b8fa3;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
 
+/* TABLE */
 .table-wrap{background:linear-gradient(145deg,rgba(26,42,58,.6),rgba(20,35,50,.6));border-radius:12px;border:1px solid rgba(255,255,255,.05);overflow:hidden;margin-bottom:20px}
 table{width:100%;border-collapse:collapse;font-size:.83rem}
 th{background:linear-gradient(90deg,rgba(26,58,90,.9),rgba(20,50,80,.9));color:#00d4ff;padding:12px 10px;text-align:left;font-weight:600;text-transform:uppercase;font-size:.75rem;letter-spacing:.5px;position:sticky;top:0}
@@ -72,6 +85,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 .badge-EVALUAR{background:rgba(255,165,2,.15);color:#ffa502;border:1px solid rgba(255,165,2,.3)}
 .badge-EVITAR{background:rgba(255,71,87,.15);color:#ff4757;border:1px solid rgba(255,71,87,.3)}
 .badge-NEW{background:rgba(0,212,255,.15);color:#00d4ff;border:1px solid rgba(0,212,255,.3);margin-left:6px}
+.badge-VENCER{background:rgba(255,71,87,.2);color:#ff4757;border:1px solid rgba(255,71,87,.4);margin-left:6px}
 .monto{font-weight:600;color:#c4b5fd}
 .entidad{color:#8ab4c7;font-size:.8rem}
 .codigo{font-family:'SF Mono',monospace;font-size:.78rem;color:#5a7a8f;background:rgba(0,0,0,.2);padding:2px 8px;border-radius:4px}
@@ -84,6 +98,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 .a-link{color:#00d4ff;text-decoration:none;font-size:.8rem;font-weight:600;transition:all .2s}
 .a-link:hover{color:#4facfe;text-decoration:underline}
 
+/* MODAL */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;justify-content:center;align-items:center;padding:20px;backdrop-filter:blur(5px)}
 .modal.show{display:flex}
 .modal-card{background:linear-gradient(145deg,#1a2a3a,#152030);padding:28px;border-radius:16px;max-width:620px;width:100%;max-height:85vh;overflow:auto;border:1px solid rgba(0,212,255,.15);box-shadow:0 25px 60px rgba(0,0,0,.5)}
@@ -112,6 +127,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 .success{background:rgba(46,213,115,.08);color:#4ade80;padding:14px 18px;border-radius:10px;margin-bottom:16px;border:1px solid rgba(46,213,115,.2);display:none;font-size:.9rem}
 .success.show{display:block}
 
+/* SUB TABS */
 .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
 .tab{background:rgba(26,42,58,.6);border:1px solid rgba(255,255,255,.06);color:#6b8fa3;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s}
 .tab:hover{background:rgba(0,212,255,.08);color:#8ab4c7}
@@ -120,9 +136,19 @@ tr:hover{background:rgba(0,212,255,.06)}
 </head>
 <body>
 <div class="container">
-<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v4.1</span></div>
-<p class="subtitle">Sistema de inteligencia de oportunidades de negocio &mdash; MercadoPublico.cl</p>
+<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v5.0</span></div>
+<p class="subtitle">Inteligencia de licitaciones publicas — 30 dias de historial + novedades automaticas</p>
 
+<!-- NAV TABS -->
+<div class="nav-tabs">
+<button class="nav-tab on" onclick="setNavTab('pipeline')" id="nav-pipeline">Pipeline</button>
+<button class="nav-tab" onclick="setNavTab('novedades')" id="nav-novedades">Novedades <span id="badge-nov" style="display:none;background:#ff4757;color:#fff;font-size:.65rem;padding:1px 6px;border-radius:10px;margin-left:4px"></span></button>
+<button class="nav-tab" onclick="setNavTab('vencer')" id="nav-vencer">Por Vencer</button>
+<button class="nav-tab" onclick="setNavTab('historial')" id="nav-historial">Historial (<span id="badge-hist">0</span>)</button>
+</div>
+
+<!-- PIPELINE VIEW -->
+<div id="view-pipeline">
 <div class="controls">
 <div class="ctrl-group"><label>Perfil</label>
 <select id="prof">
@@ -145,6 +171,58 @@ tr:hover{background:rgba(0,212,255,.06)}
 <button class="tab" onclick="setTab(2)" id="t2">Postular</button>
 <button class="tab" onclick="setTab(3)" id="t3">Evaluar</button>
 <button class="tab" onclick="setTab(4)" id="t4">Evitar</button>
+</div>
+</div>
+
+<!-- NOVEDADES VIEW -->
+<div id="view-novedades" style="display:none">
+<div class="controls">
+<div class="ctrl-group"><label>Filtro</label>
+<select id="nov-filter" onchange="loadNovedades()">
+<option value="all">Todas las novedades</option>
+<option value="constructora">Constructora</option>
+<option value="hormigon">Preformado de Hormigon</option>
+<option value="tecnologia">Tecnologia</option>
+<option value="salud">Salud</option>
+<option value="imprenta">Imprenta</option>
+<option value="buceo">Buceo</option>
+</select></div>
+<button class="btn" onclick="loadNovedades()">Actualizar</button>
+<span id="nov-cnt" style="color:#ff6b81;font-weight:700"></span>
+</div>
+</div>
+
+<!-- POR VENCER VIEW -->
+<div id="view-vencer" style="display:none">
+<div class="controls">
+<button class="btn" onclick="loadVencer()">Actualizar</button>
+<span id="venc-cnt" style="color:#ff4757;font-weight:700"></span>
+</div>
+</div>
+
+<!-- HISTORIAL VIEW -->
+<div id="view-historial" style="display:none">
+<div class="controls">
+<div class="ctrl-group"><label>Perfil</label>
+<select id="hist-prof" onchange="loadHistorial()">
+<option value="all">Todos los perfiles</option>
+<option value="constructora">Constructora</option>
+<option value="hormigon">Preformado de Hormigon</option>
+<option value="tecnologia">Tecnologia</option>
+<option value="salud">Salud</option>
+<option value="imprenta">Imprenta</option>
+<option value="buceo">Buceo</option>
+</select></div>
+<div class="ctrl-group"><label>Dias</label>
+<select id="hist-days" onchange="loadHistorial()">
+<option value="7">7 dias</option>
+<option value="14">14 dias</option>
+<option value="30" selected>30 dias</option>
+</select></div>
+<input class="search-box" id="hist-search" placeholder="Buscar en historial..." oninput="loadHistorial()">
+<button class="btn" onclick="loadHistorial()">Actualizar</button>
+<span id="hist-cnt" style="color:#a78bfa;font-weight:700"></span>
+</div>
 </div>
 
 <div class="dash" id="dash"></div>
@@ -173,6 +251,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 <div class="modal-row"><span class="modal-label">Monto Estimado</span><span class="modal-value monto-val" id="mm"></span></div>
 <div class="modal-row"><span class="modal-label">Codigo</span><span class="modal-value"><code class="codigo" id="mc"></code></span></div>
 <div class="modal-row"><span class="modal-label">Fecha Cierre</span><span class="modal-value" id="mcd"></span></div>
+<div class="modal-row"><span class="modal-label">Primera vez vista</span><span class="modal-value" id="mfs"></span></div>
 <div class="modal-row"><span class="modal-label">Score Negocio</span><span class="modal-value" id="mb"></span></div>
 <div class="modal-row"><span class="modal-label">Analisis</span><ul class="reason-list" id="mrs"></ul></div>
 <div class="modal-actions">
@@ -184,11 +263,12 @@ tr:hover{background:rgba(0,212,255,.06)}
 <script>
 const FMT=new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0});
 const FMTN=new Intl.NumberFormat('es-CL');
-let st={ops:[],filt:[],load:false,pid:'general',tab:1,search:''};
+let st={ops:[],filt:[],load:false,pid:'general',tab:1,search:'',nav:'pipeline'};
 function $(id){return document.getElementById(id)}
 
 function daysLeft(cierre){if(!cierre)return 999;const d=new Date(cierre),n=new Date();return Math.ceil((d-n)/(864e5))}
 function isNew(fecha){if(!fecha)return false;const d=new Date(fecha),n=new Date();return(n-d)<(7*864e5)}
+function isToday(fecha){if(!fecha)return false;const d=new Date(fecha);const n=new Date();return d.toDateString()===n.toDateString()}
 
 function getFiltered(){
 let f=st.ops;
@@ -215,20 +295,24 @@ const r=await fetch('/api/opportunities/run',{method:'POST',headers:{'Content-Ty
 if(r.ok)data=await r.json();
 }catch(e){console.error('Error fetch:',e.message);}
 
-console.log('DEBUG response:',data?('success='+data.success+' count='+(data.opportunities?data.opportunities.length:'null')):'null');
-
 if(data&&data.success&&data.opportunities&&data.opportunities.length>0){
 st.ops=data.opportunities;
-$('succ').textContent='Se cargaron '+data.opportunities.length+' oportunidades desde MercadoPublico';
+const novedades=data.novedades||0;
+const histTotal=data.historialTotal||0;
+$('succ').textContent=data.opportunities.length+' oportunidades | '+novedades+' novedades | '+histTotal+' en historial';
 $('succ').classList.add('show');
+if(novedades>0){
+  $('badge-nov').textContent=novedades;
+  $('badge-nov').style.display='inline';
+}
+$('badge-hist').textContent=histTotal;
 }else{
 st.ops=[];
 const pname=$('prof').options[$('prof').selectedIndex].text;
-$('err').textContent='Sin licitaciones activas para "'+pname+'". Intenta con "General (Todas las Activas)".';
+$('err').textContent='Sin licitaciones activas para "'+pname+'". Intenta con otro perfil.';
 $('err').classList.add('show');
 }
 st.filt=getFiltered();
-console.log('DEBUG st.ops:',st.ops.length,'st.filt:',st.filt.length,'tab:',st.tab,'search:',st.search);
 try{renderDash();renderTbl();}catch(e){console.error('Error render:',e);}
 st.load=false;
 $('runBtn').disabled=false;
@@ -259,20 +343,17 @@ h+=card('Evitar',FMTN.format(ea),'evitar');
 h+=card('Monto Total',amt>0?FMT.format(amt):'N/D','monto');
 $('dash').innerHTML=h;
 $('cnt').textContent=tot>0?'('+tot+')':'';
-console.log('DEBUG dash rendered, total:',tot);
 }catch(e){console.error('Error renderDash:',e);}
 }
 
-function renderTbl(){
+function renderTbl(data=st.filt){
 try{
-const f=st.filt;
-console.log('DEBUG renderTbl filt.length:',f.length);
-if(f.length===0){
-$('tbl').innerHTML='<tr><td colspan="10" class="empty"><div class="empty-icon">&#128269;</div>No hay licitaciones para mostrar.<br>Selecciona un perfil y ejecuta el pipeline.</td></tr>';
+if(!data||data.length===0){
+$('tbl').innerHTML='<tr><td colspan="10" class="empty"><div class="empty-icon">&#128269;</div>No hay licitaciones para mostrar.</td></tr>';
 return;
 }
 let h='';
-for(const o of f){
+for(const o of data){
 const sc=o.score||0;
 const bs=o.businessScore||0;
 const rec=o.recommendation||'EVALUAR';
@@ -282,12 +363,15 @@ const amt=o.amount?FMT.format(o.amount):'<span style="color:#6b8fa3;font-size:.7
 const dl=daysLeft(o.closingDate);
 const cierreClass=dl<=15?'cierre-urgente':'cierre-normal';
 const cierreText=o.closingDate?o.closingDate+' <small>('+(dl<=0?'Vencida':dl+' dias')+')</small>':'<span style="color:#5a7a8f">Sin fecha</span>';
-const nuevo=isNew(o.date)?'<span class="badge badge-NEW">NUEVA</span>':'';
+let badges='';
+if(o.firstSeen&&isToday(o.firstSeen))badges+='<span class="badge badge-NEW">HOY</span>';
+else if(isNew(o.firstSeen||o.date))badges+='<span class="badge badge-NEW">NUEVA</span>';
+if(dl<=7&&dl>0)badges+='<span class="badge badge-VENCER">VENCE</span>';
 const url=o.url||'#';
 
 h+='<tr onclick="openMod(\''+escJS(o.id||'')+'\')">';
 h+='<td><span class="score '+scClass+'">'+sc+'</span></td>';
-h+='<td><strong>'+escHTML(o.title||'')+'</strong>'+nuevo+'</td>';
+h+='<td><strong>'+escHTML(o.title||'')+'</strong>'+badges+'</td>';
 h+='<td><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
 h+='<td>'+escHTML(o.region||'')+'</td>';
 h+='<td class="monto">'+amt+'</td>';
@@ -304,7 +388,8 @@ $('tbl').innerHTML=h;
 
 function openMod(id){
 try{
-const o=st.ops.find(x=>x.id===id);
+let o=st.ops.find(x=>x.id===id);
+if(!o)o=st.histData&&st.histData.find?st.histData.find(x=>x.id===id):null;
 if(!o)return;
 $('mt').textContent=o.title||'';
 $('md').textContent=o.description||o.title||'Sin descripcion';
@@ -314,6 +399,8 @@ $('mm').innerHTML=o.amount?FMT.format(o.amount):'Monto oculto (licitacion activa
 $('mc').textContent=o.id||'';
 const dl=daysLeft(o.closingDate);
 $('mcd').innerHTML=o.closingDate?o.closingDate+' ('+(dl<=0?'Vencida':dl+' dias restantes')+')':'Sin fecha';
+const fs=o.firstSeen?new Date(o.firstSeen).toLocaleDateString('es-CL'):(o.date||'Desconocida');
+$('mfs').textContent=fs;
 $('mb').innerHTML='<strong style="color:'+(o.businessScore>=60?'#2ed573':o.businessScore>=40?'#ffa502':'#ff4757')+'">'+(o.businessScore||0)+'/100</strong>';
 const reasons=o.businessReasons||['Sin analisis detallado'];
 $('mrs').innerHTML=reasons.map(r=>{
@@ -331,10 +418,84 @@ st.tab=n;
 for(let i=1;i<=4;i++){document.getElementById('t'+i).classList.toggle('on',i===n)}
 st.filt=getFiltered();renderDash();renderTbl();
 }
-
 function filterTable(){
 st.search=$('search').value;
 st.filt=getFiltered();renderDash();renderTbl();
+}
+
+// NAV TABS
+function setNavTab(tab){
+st.nav=tab;
+['pipeline','novedades','vencer','historial'].forEach(t=>{
+  document.getElementById('view-'+t).style.display=t===tab?'block':'none';
+  document.getElementById('nav-'+t).classList.toggle('on',t===tab);
+});
+$('dash').style.display=tab==='pipeline'?'grid':'none';
+if(tab==='novedades')loadNovedades();
+if(tab==='vencer')loadVencer();
+if(tab==='historial')loadHistorial();
+if(tab==='pipeline'){renderDash();renderTbl();}
+}
+
+async function loadNovedades(){
+try{
+$('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando novedades...</td></tr>';
+const r=await fetch('/api/opportunities/novedades');
+const data=await r.json();
+if(data.success&&data.items){
+  $('nov-cnt').textContent=data.count>0?'('+data.count+' nuevas)':'';
+  function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
+  $('dash').innerHTML=card('Novedades 24h',data.count,'novedades')+card('En historial',$('badge-hist').textContent||'0','historial');
+  $('dash').style.display='grid';
+  st.histData=data.items;
+  renderTbl(data.items);
+}else{
+  $('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin novedades recientes</td></tr>';
+}
+}catch(e){console.error('Error novedades:',e);}
+}
+
+async function loadVencer(){
+try{
+$('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando por vencer...</td></tr>';
+const r=await fetch('/api/opportunities/vencer');
+const data=await r.json();
+if(data.success&&data.items){
+  $('venc-cnt').textContent=data.count>0?'('+data.count+' por vencer)':'';
+  function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
+  $('dash').innerHTML=card('Por vencer 7d',data.count,'alta');
+  $('dash').style.display='grid';
+  st.histData=data.items;
+  renderTbl(data.items);
+}else{
+  $('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin licitaciones por vencer</td></tr>';
+}
+}catch(e){console.error('Error vencer:',e);}
+}
+
+async function loadHistorial(){
+try{
+$('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando historial...</td></tr>';
+const profile=$('hist-prof').value;
+const days=$('hist-days').value;
+const search=$('hist-search').value;
+let url='/api/opportunities/historial?days='+days;
+if(profile!=='all')url+='&profileId='+profile;
+if(search)url+='&search='+encodeURIComponent(search);
+const r=await fetch(url);
+const data=await r.json();
+if(data.success&&data.items){
+  $('hist-cnt').textContent=data.count>0?'('+data.count+')':'';
+  $('badge-hist').textContent=data.historialTotal||data.count;
+  function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
+  $('dash').innerHTML=card('Historial '+days+'d',data.count,'historial');
+  $('dash').style.display='grid';
+  st.histData=data.items;
+  renderTbl(data.items);
+}else{
+  $('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin datos en historial</td></tr>';
+}
+}catch(e){console.error('Error historial:',e);}
 }
 
 function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -343,9 +504,10 @@ function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 
 (async function init(){
 try{
-console.log('DEBUG init v4.1 starting');
+console.log('DEBUG init v5.0');
 document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe()});
 await runPipe();
+loadHistorial();
 console.log('DEBUG init complete');
 }catch(e){console.error('Error init:',e);}
 })();
