@@ -23,6 +23,7 @@ const PROFILES = [
   { id: 'tecnologia', name: 'Tecnología / Software / TI', keywords: ['software','desarrollo software','sistema informatico','plataforma digital','aplicacion movil','ciberseguridad','hosting cloud','data center','red de datos','telecomunicaciones'], excluded: ['construccion','hormigon','asfalto','medico','hospital'] },
   { id: 'salud', name: 'Salud / Insumos Médicos', keywords: ['insumos medicos','equipamiento medico','medicamentos','material de curacion','material esteril','instrumental quirurgico','equipo de rayos x','tomografo','resonancia magnetica'], excluded: ['oficina','papeleria','computador','mueble','limpieza'] },
   { id: 'imprenta', name: 'Imprenta / Gráfica / Publicidad', keywords: ['imprenta','impresion offset','impresion digital','pendon pvc','banner publicitario','gigantografia','letrero luminoso','rotulacion vehicular','troquelado','corte laser','vinilo de corte','serigrafia'], excluded: ['medico','hospital','insumos medicos','quirurgico'] },
+  { id: 'hormigon', name: 'Preformado de Hormigón', keywords: ['hormigon prefabricado','hormigon premezclado','concreto prefabricado','concreto premezclado','postes hormigon','vigas hormigon','losas hormigon','paneles hormigon','adoquines hormigon','adoquin hormigon','pavimento hormigon','pavimento intertrabado','tubos hormigon','ductos hormigon','camaras inspeccion','pozos hormigon','bordillos','elementos prefabricados','bovedilla','arqueta','concreto reciclado','base granular'], excluded: ['oficina','mueble','computador','impresora','papeleria','software','camara fotografica'] },
   { id: 'general', name: 'Perfil General', keywords: [], excluded: [] },
   { id: 'buceo', name: 'Importación Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','buceo tecnico','equipo de buceo','tanque de buceo','regulador de buceo','traje de buceo','mascara de buceo','aletas de buceo','buceo profesional','buceo industrial','escafandra autonoma'], excluded: ['medico','hospital','insumos medicos','paciente','quirurgico'] }
 ];
@@ -162,6 +163,7 @@ const BUSINESS_CRITERIA: Record<string, BusinessCriteria> = {
   salud:        { minAmount: 5_000_000,   optimalAmount: 100_000_000 },
   buceo:        { minAmount: 1_000_000,   optimalAmount: 10_000_000 },
   imprenta:     { minAmount: 500_000,      optimalAmount: 20_000_000 },
+  hormigon:     { minAmount: 1_000_000,    optimalAmount: 30_000_000 },
   general:      { minAmount: 100_000,      optimalAmount: 1_000_000 }
 };
 
@@ -212,7 +214,7 @@ function scoreToPriority(score: number): string {
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ status: 'ok', service: 'assetpark-scraper', version: '4.0.0' });
+  res.json({ status: 'ok', service: 'assetpark-scraper', version: '4.1.0' });
 });
 
 app.get('/api/health/external', async (_req: Request, res: Response) => {
@@ -507,6 +509,3 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 AssetPark API v4.0.0 en puerto ${PORT}`);
   console.log(`📋 /api/health | /api/health/external | /api/profiles | /api/opportunities/run | /api/portfolio/*`);
 });
-// v4.0 deploy 20260501-2329
-// v4.1 deploy 20260501-2344
-// deploy-v4-1-20260501-2349

@@ -6,20 +6,18 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>AssetPark Licitaciones</title>
+<title>AssetPark Licitaciones v4.1</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
 body{background:linear-gradient(135deg,#0c1923 0%,#0f2235 50%,#0c1923 100%);color:#e2e8f0;min-height:100vh;padding:24px}
 .container{max-width:1400px;margin:0 auto}
 
-/* HEADER */
 .header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
 .logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#0077cc);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;box-shadow:0 4px 15px rgba(0,212,255,.3)}
 h1{font-size:1.6rem;font-weight:700;background:linear-gradient(90deg,#00d4ff,#4facfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
 .subtitle{color:#6b8fa3;font-size:.85rem;margin-bottom:20px}
 .version{color:#4a6a7a;font-size:.7rem;margin-left:auto;background:rgba(0,0,0,.2);padding:3px 10px;border-radius:12px}
 
-/* CONTROLS */
 .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;padding:16px;background:rgba(26,42,58,.6);border-radius:12px;border:1px solid rgba(0,212,255,.1);backdrop-filter:blur(10px)}
 .ctrl-group{display:flex;align-items:center;gap:8px}
 .ctrl-group label{font-weight:600;color:#8ab4c7;font-size:.85rem;text-transform:uppercase;letter-spacing:.5px}
@@ -36,7 +34,6 @@ select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,2
 .search-box:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,.15)}
 .search-box::placeholder{color:#5a7a8f}
 
-/* DASHBOARD */
 .dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px}
 .dash-card{background:linear-gradient(145deg,rgba(26,42,58,.8),rgba(20,35,50,.8));padding:16px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,.05);transition:all .2s;position:relative;overflow:hidden}
 .dash-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3);border-color:rgba(0,212,255,.2)}
@@ -60,7 +57,6 @@ select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,2
 .dash-num.monto{color:#a78bfa}
 .dash-label{font-size:.75rem;color:#6b8fa3;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
 
-/* TABLE */
 .table-wrap{background:linear-gradient(145deg,rgba(26,42,58,.6),rgba(20,35,50,.6));border-radius:12px;border:1px solid rgba(255,255,255,.05);overflow:hidden;margin-bottom:20px}
 table{width:100%;border-collapse:collapse;font-size:.83rem}
 th{background:linear-gradient(90deg,rgba(26,58,90,.9),rgba(20,50,80,.9));color:#00d4ff;padding:12px 10px;text-align:left;font-weight:600;text-transform:uppercase;font-size:.75rem;letter-spacing:.5px;position:sticky;top:0}
@@ -85,11 +81,9 @@ tr:hover{background:rgba(0,212,255,.06)}
 .empty{text-align:center;color:#5a7a8f;padding:50px 20px;font-style:italic}
 .empty-icon{font-size:3rem;margin-bottom:12px;opacity:.5}
 
-/* LINKS */
 .a-link{color:#00d4ff;text-decoration:none;font-size:.8rem;font-weight:600;transition:all .2s}
 .a-link:hover{color:#4facfe;text-decoration:underline}
 
-/* MODAL */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;justify-content:center;align-items:center;padding:20px;backdrop-filter:blur(5px)}
 .modal.show{display:flex}
 .modal-card{background:linear-gradient(145deg,#1a2a3a,#152030);padding:28px;border-radius:16px;max-width:620px;width:100%;max-height:85vh;overflow:auto;border:1px solid rgba(0,212,255,.15);box-shadow:0 25px 60px rgba(0,0,0,.5)}
@@ -113,13 +107,11 @@ tr:hover{background:rgba(0,212,255,.06)}
 .modal-btn.secondary{background:rgba(255,255,255,.08);color:#8ab4c7;border:1px solid rgba(255,255,255,.12)}
 .modal-btn.secondary:hover{background:rgba(255,255,255,.12)}
 
-/* ERROR / SUCCESS */
 .err{background:rgba(255,71,87,.08);color:#ff6b7a;padding:14px 18px;border-radius:10px;margin-bottom:16px;border:1px solid rgba(255,71,87,.2);display:none;font-size:.9rem}
 .err.show{display:block}
 .success{background:rgba(46,213,115,.08);color:#4ade80;padding:14px 18px;border-radius:10px;margin-bottom:16px;border:1px solid rgba(46,213,115,.2);display:none;font-size:.9rem}
 .success.show{display:block}
 
-/* TABS */
 .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
 .tab{background:rgba(26,42,58,.6);border:1px solid rgba(255,255,255,.06);color:#6b8fa3;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s}
 .tab:hover{background:rgba(0,212,255,.08);color:#8ab4c7}
@@ -128,23 +120,24 @@ tr:hover{background:rgba(0,212,255,.06)}
 </head>
 <body>
 <div class="container">
-<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v4.0</span></div>
-<p class="subtitle">Sistema de inteligencia de oportunidades de negocio — MercadoPublico.cl</p>
+<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v4.1</span></div>
+<p class="subtitle">Sistema de inteligencia de oportunidades de negocio &mdash; MercadoPublico.cl</p>
 
 <div class="controls">
 <div class="ctrl-group"><label>Perfil</label>
 <select id="prof">
 <option value="constructora">Constructora / Obras Civiles</option>
-<option value="tecnologia">Tecnología / Infraestructura IT</option>
-<option value="salud">Salud / Instituciones Públicas</option>
+<option value="tecnologia">Tecnologia / Infraestructura IT</option>
+<option value="salud">Salud / Instituciones Publicas</option>
 <option value="imprenta">Imprenta / Publicidad</option>
+<option value="hormigon">Preformado de Hormigon</option>
 <option value="general" selected>General (Todas las Activas)</option>
-<option value="buceo">Buceo / Deportes Acuáticos</option>
+<option value="buceo">Buceo / Deportes Acuaticos</option>
 </select></div>
 <button class="btn" id="runBtn" onclick="runPipe()">Ejecutar Pipeline</button>
 <div class="spinner" id="spin"></div>
 <span id="cnt" style="color:#00d4ff;font-weight:700"></span>
-<input class="search-box" id="search" placeholder="Buscar por título, entidad, región..." oninput="filterTable()">
+<input class="search-box" id="search" placeholder="Buscar por titulo, entidad, region..." oninput="filterTable()">
 </div>
 
 <div class="tabs">
@@ -162,8 +155,8 @@ tr:hover{background:rgba(0,212,255,.06)}
 <div class="table-wrap">
 <table>
 <thead><tr>
-<th style="width:60px">Score</th><th>Título</th><th>Entidad</th><th>Región</th><th style="width:110px">Monto</th>
-<th>Código</th><th style="width:90px">Negocio</th><th style="width:90px">Recom.</th><th style="width:100px">Cierre</th><th style="width:50px"></th>
+<th style="width:60px">Score</th><th>Titulo</th><th>Entidad</th><th>Region</th><th style="width:110px">Monto</th>
+<th>Codigo</th><th style="width:90px">Negocio</th><th style="width:90px">Recom.</th><th style="width:100px">Cierre</th><th style="width:50px"></th>
 </tr></thead>
 <tbody id="tbl"></tbody>
 </table>
@@ -174,14 +167,14 @@ tr:hover{background:rgba(0,212,255,.06)}
 <div class="modal-card">
 <div class="modal-header"><div class="modal-title" id="mt"></div><button class="modal-close" onclick="clsMod()">Cerrar</button></div>
 <div class="modal-body">
-<div class="modal-row"><span class="modal-label">Descripción</span><span class="modal-value" id="md"></span></div>
+<div class="modal-row"><span class="modal-label">Descripcion</span><span class="modal-value" id="md"></span></div>
 <div class="modal-row"><span class="modal-label">Entidad</span><span class="modal-value" id="me"></span></div>
-<div class="modal-row"><span class="modal-label">Región</span><span class="modal-value" id="mr"></span></div>
+<div class="modal-row"><span class="modal-label">Region</span><span class="modal-value" id="mr"></span></div>
 <div class="modal-row"><span class="modal-label">Monto Estimado</span><span class="modal-value monto-val" id="mm"></span></div>
-<div class="modal-row"><span class="modal-label">Código</span><span class="modal-value"><code class="codigo" id="mc"></code></span></div>
+<div class="modal-row"><span class="modal-label">Codigo</span><span class="modal-value"><code class="codigo" id="mc"></code></span></div>
 <div class="modal-row"><span class="modal-label">Fecha Cierre</span><span class="modal-value" id="mcd"></span></div>
 <div class="modal-row"><span class="modal-label">Score Negocio</span><span class="modal-value" id="mb"></span></div>
-<div class="modal-row"><span class="modal-label">Análisis</span><ul class="reason-list" id="mrs"></ul></div>
+<div class="modal-row"><span class="modal-label">Analisis</span><ul class="reason-list" id="mrs"></ul></div>
 <div class="modal-actions">
 <a class="modal-btn primary" id="mu" href="#" target="_blank">Ver en MercadoPublico</a>
 <button class="modal-btn secondary" onclick="clsMod()">Cerrar</button>
@@ -314,15 +307,15 @@ try{
 const o=st.ops.find(x=>x.id===id);
 if(!o)return;
 $('mt').textContent=o.title||'';
-$('md').textContent=o.description||o.title||'Sin descripción';
+$('md').textContent=o.description||o.title||'Sin descripcion';
 $('me').textContent=o.entity||'';
 $('mr').textContent=o.region||'';
-$('mm').innerHTML=o.amount?FMT.format(o.amount):'Monto oculto (licitación activa) - <a class="a-link" href="'+(o.url||'#')+'" target="_blank">Ver en ficha</a>';
+$('mm').innerHTML=o.amount?FMT.format(o.amount):'Monto oculto (licitacion activa) - <a class="a-link" href="'+(o.url||'#')+'" target="_blank">Ver en ficha</a>';
 $('mc').textContent=o.id||'';
 const dl=daysLeft(o.closingDate);
 $('mcd').innerHTML=o.closingDate?o.closingDate+' ('+(dl<=0?'Vencida':dl+' dias restantes')+')':'Sin fecha';
 $('mb').innerHTML='<strong style="color:'+(o.businessScore>=60?'#2ed573':o.businessScore>=40?'#ffa502':'#ff4757')+'">'+(o.businessScore||0)+'/100</strong>';
-const reasons=o.businessReasons||['Sin análisis detallado'];
+const reasons=o.businessReasons||['Sin analisis detallado'];
 $('mrs').innerHTML=reasons.map(r=>{
 const cls=r.toLowerCase().includes('monto')||r.toLowerCase().includes('riesgo')||r.toLowerCase().includes('cuidado')?'riesgo':r.toLowerCase().includes('oportunidad')||r.toLowerCase().includes('match')||r.toLowerCase().includes('buen')?'oportunidad':'';
 return'<li class="'+cls+'">'+escHTML(r)+'</li>'
@@ -348,10 +341,9 @@ function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r')}
 function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 
-// Inicialización con manejo de errores
 (async function init(){
 try{
-console.log('DEBUG init v4.0 starting');
+console.log('DEBUG init v4.1 starting');
 document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe()});
 await runPipe();
 console.log('DEBUG init complete');

@@ -1,4 +1,4 @@
-# AssetPark Scraper MercadoPublico
+# AssetPark Scraper MercadoPublico v4.0
 
 Motor de inteligencia de licitaciones para prospectar oportunidades de negocio en MercadoPublico.cl.
 
@@ -16,11 +16,20 @@ Motor de inteligencia de licitaciones para prospectar oportunidades de negocio e
 | `constructora` | Construcción, obras civiles, edificación |
 | `tecnologia` | Software, servicios TI, ciberseguridad |
 | `salud` | Insumos médicos, equipamiento hospitalario |
-| `buceo` | Importación equipo de buceo técnico |
 | `imprenta` | Imprenta, gráfica, publicidad, pendones PVC, letreros, autoadhesivos, troquelado |
-| `general` | Búsqueda amplia sin filtros |
+| `general` | Todas las licitaciones activas sin filtrar |
+| `buceo` | Importación equipo de buceo técnico |
 
 Cada perfil es un **cañón de ventas empaquetado** que busca oportunidades específicas según keywords.
+
+## v4.0 - Cambios principales
+
+- **Scoring porcentual**: Base score calculado como % de keywords matched (+12 bonus si hay match parcial)
+- **No todo es EVITAR**: Umbrales ajustados — POSTULAR ≥60, EVALUAR ≥40, EVITAR <40
+- **Monto=0 no penaliza**: Score neutral 60 para licitaciones activas con monto oculto
+- **Perfil General**: Muestra todas las activas marcadas como EVALUAR para decisión manual
+- **Cache-busting**: Headers anti-cache en API y static serving para evitar versiones viejas en Render
+- **Frontend robusto**: Logs de debug en consola, try/catch en renders, escaping seguro
 
 ## Uso local (Windows)
 
