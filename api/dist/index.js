@@ -329,13 +329,16 @@ app.post('/api/opportunities/run', async (req, res) => {
             const baseSc = calculateScore(op.title, op.description, profile.keywords);
             const bizSc = calculateBusinessScore(op.amount, profile.id);
             const finalScore = Math.round(baseSc.score * 0.60 + bizSc.score * 0.40);
+            // Nuevo sistema de recomendacion: solo POSTULAR / EVALUAR / REVISION
+            // EVITAR eliminado porque genera rechazo en clientes
             let recommendation;
-            if (finalScore >= 60 && bizSc.score >= 50)
+            if (finalScore >= 60)
                 recommendation = 'POSTULAR';
-            else if (finalScore >= 40 && bizSc.score >= 30)
+            else if (finalScore >= 35)
                 recommendation = 'EVALUAR';
             else
-                recommendation = 'EVITAR';
+                recommendation = 'REVISION'; // antes era EVITAR - ahora es "revisar con cuidado"
+            // Perfil General: todo EVALUAR para que el usuario decida manualmente
             if (profileId === 'general')
                 recommendation = 'EVALUAR';
             const scored = {
