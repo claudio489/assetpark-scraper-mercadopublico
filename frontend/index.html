@@ -578,6 +578,28 @@ st.pid='general';
 updateAuthUI();
 window.location.reload();
 }
+function filterSelects(){
+const s=$('prof');
+const hist=$('hist-prof');
+if(!s._orig)s._orig=Array.from(s.options).map(o=>({v:o.value,t:o.text}));
+if(!hist._orig)hist._orig=Array.from(hist.options).map(o=>({v:o.value,t:o.text}));
+const isLoggedAdmin=authToken&&authUser&&authUser.profile==='general';
+const isLoggedUser=authToken&&authUser&&authUser.profile!=='general';
+s.innerHTML='';
+for(const o of s._orig){
+if(isLoggedAdmin){s.add(new Option(o.t,o.v));}
+else if(isLoggedUser&&o.v===authUser.profile){s.add(new Option(o.t,o.v));}
+else if(!authToken){s.add(new Option(o.t,o.v));}
+}
+hist.innerHTML='';
+for(const o of hist._orig){
+if(isLoggedAdmin){hist.add(new Option(o.t,o.v));}
+else if(isLoggedUser&&(o.v===authUser.profile||o.v==='all')){hist.add(new Option(o.t,o.v));}
+else if(!authToken){hist.add(new Option(o.t,o.v));}
+}
+if(st.pid)s.value=st.pid;
+}
+
 function updateAuthUI(){
 if(authToken&&authUser){
 $('userBadge').textContent=authUser.name||authUser.profile;
@@ -587,6 +609,7 @@ $('logoutBtn').style.display='inline-block';
 $('userBadge').style.display='none';
 $('logoutBtn').style.display='none';
 }
+filterSelects();
 }
 
 function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
