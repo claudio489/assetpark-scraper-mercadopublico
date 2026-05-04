@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>AssetPark Licitaciones v5.0</title>
+<title>AssetPark Licitaciones v5.2</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
 body{background:linear-gradient(135deg,#0c1923 0%,#0f2235 50%,#0c1923 100%);color:#e2e8f0;min-height:100vh;padding:24px}
@@ -136,7 +136,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 </head>
 <body>
 <div class="container">
-<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v5.1</span></div>
+<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v5.2</span><button class="btn btn-login" id="loginBtn" onclick="openLogin()" style="margin-left:12px;padding:6px 14px;font-size:.75rem">Login</button><span id="userName" style="color:#00d4ff;font-size:.75rem;margin-left:8px;display:none"></span><button class="btn btn-logout" id="logoutBtn" onclick="logout()" style="margin-left:8px;padding:6px 14px;font-size:.75rem;display:none">Salir</button></div>
 <p class="subtitle">Inteligencia de licitaciones publicas — 30 dias de historial + novedades automaticas</p>
 
 <!-- NAV TABS -->
@@ -241,6 +241,16 @@ tr:hover{background:rgba(0,212,255,.06)}
 </div>
 </div>
 
+<div class="modal" id="loginMod" onclick="if(event.target===this)clsLogin()">
+<div class="modal-card" style="max-width:400px">
+<div class="modal-header"><div class="modal-title">Iniciar Sesión</div><button class="modal-close" onclick="clsLogin()">Cerrar</button></div>
+<div class="modal-body">
+<div class="modal-row"><span class="modal-label">Email</span><input id="loginEmail" type="email" class="search-box" style="flex:1" placeholder="admin@assetpark.cl"></div>
+<div class="modal-row"><span class="modal-label">Password</span><input id="loginPass" type="password" class="search-box" style="flex:1" placeholder="Password"></div>
+<div class="modal-row" id="loginErr" style="color:#ff4757;font-size:.85rem;display:none"></div>
+<div class="modal-actions"><button class="modal-btn primary" onclick="doLogin()">Ingresar</button><button class="modal-btn secondary" onclick="clsLogin()">Cancelar</button></div>
+</div></div></div>
+
 <div class="modal" id="mod" onclick="if(event.target===this)clsMod()">
 <div class="modal-card">
 <div class="modal-header"><div class="modal-title" id="mt"></div><button class="modal-close" onclick="clsMod()">Cerrar</button></div>
@@ -291,7 +301,7 @@ $('err').classList.remove('show');
 $('succ').classList.remove('show');
 let data=null;
 try{
-const r=await fetch('/api/opportunities/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profileId:st.pid,limit:50})});
+const r=await fetch('/api/opportunities/run',{method:'POST',headers:authHeaders(),body:JSON.stringify({profileId:st.pid,limit:50})});
 if(r.ok)data=await r.json();
 }catch(e){console.error('Error fetch:',e.message);}
 
@@ -440,7 +450,7 @@ if(tab==='pipeline'){renderDash();renderTbl();}
 async function loadNovedades(){
 try{
 $('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando novedades...</td></tr>';
-const r=await fetch('/api/opportunities/novedades');
+const r=await fetch('/api/opportunities/novedades',{headers:authHeaders()});
 const data=await r.json();
 if(data.success&&data.items){
   $('nov-cnt').textContent=data.count>0?'('+data.count+' nuevas)':'';
@@ -458,7 +468,7 @@ if(data.success&&data.items){
 async function loadVencer(){
 try{
 $('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando por vencer...</td></tr>';
-const r=await fetch('/api/opportunities/vencer');
+const r=await fetch('/api/opportunities/vencer',{headers:authHeaders()});
 const data=await r.json();
 if(data.success&&data.items){
   $('venc-cnt').textContent=data.count>0?'('+data.count+' por vencer)':'';
@@ -482,7 +492,7 @@ const search=$('hist-search').value;
 let url='/api/opportunities/historial?days='+days;
 if(profile!=='all')url+='&profileId='+profile;
 if(search)url+='&search='+encodeURIComponent(search);
-const r=await fetch(url);
+const r=await fetch(url,{headers:authHeaders()});
 const data=await r.json();
 if(data.success&&data.items){
   $('hist-cnt').textContent=data.count>0?'('+data.count+')':'';
@@ -502,14 +512,13 @@ function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r')}
 function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 
-(async function init(){
-try{
-console.log('DEBUG init v5.0');
-document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe()});
-await runPipe();
-loadHistorial();
-console.log('DEBUG init complete');
-}catch(e){console.error('Error init:',e);}
-})();
-</script>
-</body></html>
+// ========== AUTH v5.2 ==========
+let AUTH_TOKEN=localStorage.getItem('ap_token')||'';
+let AUTH_USER=null;
+
+function authHeaders(){
+  return AUTH_TOKEN?{'Authorization':'Bearer '+AUTH_TOKEN,'Content-Type':'application/json'}:{'Content-Type':'application/json'};
+}
+
+async function loadUser(){
+  if(!AUT

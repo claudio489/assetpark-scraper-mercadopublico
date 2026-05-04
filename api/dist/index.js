@@ -11,9 +11,17 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const decision_1 = require("./decision");
+const routes_1 = __importDefault(require("./auth/routes"));
+const middleware_1 = require("./auth/middleware");
+const store_1 = require("./auth/store");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+// Seed usuarios por defecto
+(0, store_1.seedUsersIfEmpty)();
+// Auth middleware global (opcional — no bloquea si no hay token)
+app.use(middleware_1.authMiddleware);
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const TICKET = process.env.MP_TICKET || '8BBCAB7E-0911-4E40-BD68-C56A0A33FF78';
 const MP_API = 'https://api.mercadopublico.cl/servicios/v1/publico';
@@ -293,7 +301,8 @@ const PORTFOLIO_CATEGORIES = ['Construccion', 'Montaje', 'Mantencion', 'Suminist
 app.get('/api/health', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const histKeys = Object.keys(historial);
-    res.json({ status: 'ok', service: 'assetpark-scraper', version: '5.0.0', historialSize: histKeys.length });
+    const authInfo = _req.auth ? { user: _req.auth.email, role: _req.auth.role } : null;
+    res.json({ status: 'ok', service: 'assetpark-scraper', version: '5.2.0', historialSize: histKeys.length, decisionEngine: true, auth: authInfo });
 });
 app.get('/api/health/external', async (_req, res) => {
     try {
@@ -307,13 +316,26 @@ app.get('/api/health/external', async (_req, res) => {
     }
 });
 app.get('/api/profiles', (_req, res) => {
+    let profiles = [...PROFILES];
+    // Si hay usuario autenticado y no es admin, filtrar perfiles permitidos
+    if (_req.auth && _req.auth.role !== 'admin') {
+        profiles = profiles.filter(p => (0, middleware_1.isProfileAllowed)(_req, p.id));
+    }
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, profiles: PROFILES });
+    res.json({ success: true, profiles });
 });
+app.use('/api/auth', routes_1.default);
 // ---- PIPELINE ----
 let lastResult = null;
 app.post('/api/opportunities/run', async (req, res) => {
     const { profileId = 'general', limit = 50 } = req.body || {};
+    // Verificar permisos de perfil si hay auth
+    if (req.auth && req.auth.role !== 'admin') {
+        if (!(0, middleware_1.isProfileAllowed)(req, profileId)) {
+            res.status(403).json({ success: false, error: 'Perfil no permitido para este usuario' });
+            return;
+        }
+    }
     const profile = PROFILES.find(p => p.id === profileId) || PROFILES[4];
     const now = new Date().toISOString();
     console.log(`[API] Pipeline v5 - perfil: ${profile.id}, limit: ${limit}`);
@@ -345,8 +367,29 @@ app.post('/api/opportunities/run', async (req, res) => {
                 matchedKeywords: baseSc.matchedKeywords,
                 businessScore: bizSc.score,
                 businessReasons: bizSc.reasons,
-                recommendation
+                recommendation,
+                // === DECISION ENGINE v5.1 (capa adicional, no invasiva) ===
+                v5: {}
             };
+            // Agregar analisis Decision Engine (solo si hay ejecutoras configuradas)
+            try {
+                const normalized = (0, decision_1.normalizeOpportunity)({ ...scored, profileId });
+                const decision = (0, decision_1.analyzeOpportunity)(normalized, decision_1.EXECUTORS);
+                scored.v5 = {
+                    decisionValue: decision.decisionValue,
+                    probabilitySuccess: decision.probabilitySuccess,
+                    expectedProfit: decision.expectedProfit,
+                    riskScore: decision.riskScore,
+                    fitScore: decision.fitScore,
+                    bestExecutorId: decision.bestExecutorId,
+                    bestExecutorName: decision.bestExecutorName,
+                    decision: decision.decision,
+                    reasoning: decision.reasoning
+                };
+            }
+            catch (e) {
+                scored.v5 = { error: 'Decision engine unavailable' };
+            }
             // Guardar en historial persistente
             const existing = historial[op.id];
             if (!existing) {
@@ -517,6 +560,68 @@ app.delete('/api/portfolio/:id', (req, res) => {
     res.json({ success: true, message: 'Eliminado' });
 });
 // ==========================================
+// DECISION ENGINE v5.1 ENDPOINTS (nuevos, opcionales)
+// No rompen compatibilidad con v5.0
+// ==========================================
+app.get('/api/decision/executors', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, count: decision_1.EXECUTORS.length, executors: decision_1.EXECUTORS });
+});
+app.post('/api/decision/analyze', (req, res) => {
+    const { opportunity } = req.body || {};
+    if (!opportunity) {
+        res.status(400).json({ error: 'Falta opportunity en body' });
+        return;
+    }
+    try {
+        const normalized = (0, decision_1.normalizeOpportunity)({ ...opportunity, profileId: opportunity.profileId || 'general' });
+        const decision = (0, decision_1.analyzeOpportunity)(normalized, decision_1.EXECUTORS);
+        const best = (0, decision_1.getBestExecutor)(normalized, decision_1.EXECUTORS);
+        res.setHeader('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            opportunityId: opportunity.id,
+            decision,
+            bestExecutor: best.executor ? { id: best.executor.id, name: best.executor.name, type: best.executor.type } : null,
+            allExecutors: decision_1.EXECUTORS.map(ex => {
+                const fit = (0, decision_1.analyzeOpportunity)(normalized, [ex]);
+                return { id: ex.id, fitScore: fit.fitScore, decision: fit.decision };
+            }).sort((a, b) => b.fitScore - a.fitScore)
+        });
+    }
+    catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+app.post('/api/decision/rank', (req, res) => {
+    const { opportunities, topN = 20 } = req.body || {};
+    if (!Array.isArray(opportunities)) {
+        res.status(400).json({ error: 'Falta opportunities[] en body' });
+        return;
+    }
+    try {
+        const normalized = opportunities.map((op) => (0, decision_1.normalizeOpportunity)({ ...op, profileId: op.profileId || 'general' }));
+        const ranked = (0, decision_1.rankOpportunities)(normalized, decision_1.EXECUTORS, topN);
+        res.setHeader('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            total: opportunities.length,
+            ranked: ranked.map(r => ({
+                id: r.opportunity.id,
+                title: r.opportunity.title,
+                score: r.score,
+                profit: r.profit,
+                risk: r.risk,
+                decision: r.decision,
+                executor: r.executor?.name || null
+            }))
+        });
+    }
+    catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+// ==========================================
 // STATIC
 // ==========================================
 const staticPaths = [
@@ -563,6 +668,8 @@ else {
     });
 }
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`AssetPark API v5.0.0 en puerto ${PORT}`);
+    console.log(`AssetPark API v5.2.0 en puerto ${PORT}`);
+    console.log(`Auth: 3 usuarios seedeados (admin@assetpark.cl, dyg@dygconstructora.cl, demo@demo.cl)`);
+    console.log(`Decision Engine: ${decision_1.EXECUTORS.length} ejecutoras configuradas`);
     console.log(`Historial: ${Object.keys(historial).length} licitaciones persistidas`);
 });
