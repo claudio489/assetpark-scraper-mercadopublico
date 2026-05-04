@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: assetpark-scraper
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: |
+      set -e
+      echo "=== AssetPark Scraper v5.0 Build ==="
+      echo "=== Instalando Engine ==="
+      cd engine && npm install && cd ..
+      echo "=== Compilando Engine ==="
+      cd engine && node node_modules/typescript/bin/tsc && cd ..
+      echo "=== Instalando API ==="
+      cd api && npm install && cd ..
+      echo "=== Compilando API ==="
+      cd api && node node_modules/typescript/bin/tsc && cd ..
+      echo "=== Preparando directorio de datos ==="
+      mkdir -p data
+      echo "=== Copiando frontend ==="
+      rm -rf api/public
+      mkdir -p api/public
+      cp -r frontend/* api/public/
+      echo "v5.0-$(date +%s)" > api/public/version.txt
+      echo "=== Build OK ==="
+      ls -la api/public/
+    startCommand: cd api && NODE_ENV=production node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MP_TICKET
+        value: 8BBCAB7E-0911-4E40-BD68-C56A0A33FF78
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/health
+    autoDeploy: true
