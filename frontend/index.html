@@ -503,11 +503,17 @@ async function loadUser(){
 
 function filterProfileDropdown(allowed){
   const sel=$('prof');
+  let firstAllowed = null;
   for(let i=0;i<sel.options.length;i++){
     const opt=sel.options[i];
     const val=opt.value;
-    if(val==='general'||allowed.includes(val)){opt.disabled=false;}
+    if(allowed.includes(val)){opt.disabled=false; if(!firstAllowed) firstAllowed=val;}
     else{opt.disabled=true;}
+  }
+  // Si el perfil actual esta deshabilitado, cambiar al primero permitido
+  if(sel.value && !allowed.includes(sel.value) && firstAllowed){
+    sel.value = firstAllowed;
+    st.pid = firstAllowed;
   }
 }
 

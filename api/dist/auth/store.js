@@ -100,8 +100,8 @@ function seedUsersIfEmpty() {
     console.log('[AUTH] Seeding usuarios por defecto...');
     // Admin
     createUser('admin@assetpark.cl', 'admin2024', 'AssetPark Admin', 'admin', ['constructora', 'tecnologia', 'salud', 'imprenta', 'hormigon', 'general', 'buceo']);
-    // D&G Constructora — solo acceso a perfil dyg-constructora
-    createUser('dyg@dygconstructora.cl', 'dyg2024', 'D&G Constructora SPA', 'client', ['dyg-constructora']);
+    // D&G Constructora — solo acceso a perfil constructora (genérico)
+    createUser('dyg@dygconstructora.cl', 'dyg2024', 'D&G Constructora SPA', 'client', ['constructora']);
     // Demo cliente multiperfil
     createUser('demo@demo.cl', 'demo2024', 'Demo Usuario', 'client', ['constructora', 'hormigon']);
     console.log('[AUTH] Seed OK — 3 usuarios creados');
