@@ -7,6 +7,10 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import {
+  normalizeOpportunity, analyzeOpportunity, EXECUTORS,
+  getBestExecutor, rankOpportunities
+} from './decision';
 
 const app = express();
 app.use(cors());
@@ -327,7 +331,7 @@ const PORTFOLIO_CATEGORIES = ['Construccion', 'Montaje', 'Mantencion', 'Suminist
 app.get('/api/health', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-store');
   const histKeys = Object.keys(historial);
-  res.json({ status: 'ok', service: 'assetpark-scraper', version: '5.0.0', historialSize: histKeys.length });
+  res.json({ status: 'ok', service: 'assetpark-scraper', version: '5.1.0', historialSize: histKeys.length, decisionEngine: true });
 });
 
 app.get('/api/health/external', async (_req: Request, res: Response) => {
@@ -384,8 +388,29 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
         matchedKeywords: baseSc.matchedKeywords,
         businessScore: bizSc.score,
         businessReasons: bizSc.reasons,
-        recommendation
+        recommendation,
+        // === DECISION ENGINE v5.1 (capa adicional, no invasiva) ===
+        v5: {} as any
       };
+
+      // Agregar analisis Decision Engine (solo si hay ejecutoras configuradas)
+      try {
+        const normalized = normalizeOpportunity({ ...scored, profileId });
+        const decision = analyzeOpportunity(normalized, EXECUTORS);
+        scored.v5 = {
+          decisionValue: decision.decisionValue,
+          probabilitySuccess: decision.probabilitySuccess,
+          expectedProfit: decision.expectedProfit,
+          riskScore: decision.riskScore,
+          fitScore: decision.fitScore,
+          bestExecutorId: decision.bestExecutorId,
+          bestExecutorName: decision.bestExecutorName,
+          decision: decision.decision,
+          reasoning: decision.reasoning
+        };
+      } catch (e) {
+        scored.v5 = { error: 'Decision engine unavailable' };
+      }
 
       // Guardar en historial persistente
       const existing = historial[op.id];
@@ -571,6 +596,70 @@ app.delete('/api/portfolio/:id', (req: Request, res: Response) => {
 });
 
 // ==========================================
+// DECISION ENGINE v5.1 ENDPOINTS (nuevos, opcionales)
+// No rompen compatibilidad con v5.0
+// ==========================================
+
+app.get('/api/decision/executors', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, count: EXECUTORS.length, executors: EXECUTORS });
+});
+
+app.post('/api/decision/analyze', (req: Request, res: Response) => {
+  const { opportunity } = req.body || {};
+  if (!opportunity) {
+    res.status(400).json({ error: 'Falta opportunity en body' });
+    return;
+  }
+  try {
+    const normalized = normalizeOpportunity({ ...opportunity, profileId: opportunity.profileId || 'general' });
+    const decision = analyzeOpportunity(normalized, EXECUTORS);
+    const best = getBestExecutor(normalized, EXECUTORS);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      success: true,
+      opportunityId: opportunity.id,
+      decision,
+      bestExecutor: best.executor ? { id: best.executor.id, name: best.executor.name, type: best.executor.type } : null,
+      allExecutors: EXECUTORS.map(ex => {
+        const fit = analyzeOpportunity(normalized, [ex]);
+        return { id: ex.id, fitScore: fit.fitScore, decision: fit.decision };
+      }).sort((a: any, b: any) => b.fitScore - a.fitScore)
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: (e as Error).message });
+  }
+});
+
+app.post('/api/decision/rank', (req: Request, res: Response) => {
+  const { opportunities, topN = 20 } = req.body || {};
+  if (!Array.isArray(opportunities)) {
+    res.status(400).json({ error: 'Falta opportunities[] en body' });
+    return;
+  }
+  try {
+    const normalized = opportunities.map((op: any) => normalizeOpportunity({ ...op, profileId: op.profileId || 'general' }));
+    const ranked = rankOpportunities(normalized, EXECUTORS, topN);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({
+      success: true,
+      total: opportunities.length,
+      ranked: ranked.map(r => ({
+        id: r.opportunity.id,
+        title: r.opportunity.title,
+        score: r.score,
+        profit: r.profit,
+        risk: r.risk,
+        decision: r.decision,
+        executor: r.executor?.name || null
+      }))
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: (e as Error).message });
+  }
+});
+
+// ==========================================
 // STATIC
 // ==========================================
 const staticPaths = [
@@ -614,6 +703,7 @@ if (frontendPath) {
 }
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`AssetPark API v5.0.0 en puerto ${PORT}`);
+  console.log(`AssetPark API v5.1.0 en puerto ${PORT}`);
+  console.log(`Decision Engine: ${EXECUTORS.length} ejecutoras configuradas`);
   console.log(`Historial: ${Object.keys(historial).length} licitaciones persistidas`);
 });
