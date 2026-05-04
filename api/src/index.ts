@@ -697,9 +697,20 @@ if (frontendPath) {
       }
     }
   }));
-  app.get('*', (_req: Request, res: Response) => {
+  // Landing page en raiz
+  app.get('/', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(path.join(frontendPath, 'landing.html'));
+  });
+  // App en /app (soporta ?perfil=constructora etc)
+  app.get('/app', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+  // Catch-all para rutas no API -> landing
+  app.get('*', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(path.join(frontendPath, 'landing.html'));
   });
   console.log(`[STATIC] Frontend: ${frontendPath}`);
 } else {

@@ -235,7 +235,12 @@ tr:hover{background:rgba(0,212,255,.06)}
 <script>
 const FMT=new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0});
 const FMTN=new Intl.NumberFormat('es-CL');
-let st={ops:[],filt:[],load:false,pid:'general',tab:1,search:''};
+const urlParams=new URLSearchParams(window.location.search);
+const perfilFromUrl=urlParams.get('perfil');
+const perfilValido=['constructora','tecnologia','salud','imprenta','hormigon','pallets','buceo','general'];
+const perfilInicial=perfilFromUrl&&perfilValido.includes(perfilFromUrl)?perfilFromUrl:'general';
+
+let st={ops:[],filt:[],load:false,pid:perfilInicial,tab:1,search:''};
 function $(id){return document.getElementById(id)}
 function daysLeft(cierre){if(!cierre)return 999;const d=new Date(cierre),n=new Date();return Math.ceil((d-n)/(864e5))}
 function isNew(fecha){if(!fecha)return false;const d=new Date(fecha),n=new Date();return(n-d)<(7*864e5)}
@@ -428,10 +433,12 @@ function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 
 (async function init(){
 try{
-console.log('DEBUG init v5.1');
+console.log('DEBUG init v5.1 + landing + perfiles URL');
+// Setear el select al perfil de la URL (ej: ?perfil=constructora)
+document.getElementById('prof').value=st.pid;
 document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe();});
 await runPipe();loadHistorial();
-console.log('DEBUG init complete');
+console.log('DEBUG init complete, perfil:',st.pid);
 }catch(e){console.error('Init error:',e);}
 })();
 </script>
