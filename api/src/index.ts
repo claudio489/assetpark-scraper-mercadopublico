@@ -102,6 +102,7 @@ const PROFILES = [
   { id: 'salud', name: 'Salud / Insumos Medicos', keywords: ['insumos medicos','equipamiento medico','medicamentos','material de curacion','material esteril','instrumental quirurgico','equipo de rayos x','tomografo','resonancia magnetica'], excluded: ['oficina','papeleria','computador','mueble','limpieza'] },
   { id: 'imprenta', name: 'Imprenta / Grafica / Publicidad', keywords: ['imprenta','impresion offset','impresion digital','pendon pvc','banner publicitario','gigantografia','letrero luminoso','rotulacion vehicular','troquelado','corte laser','vinilo de corte','serigrafia'], excluded: ['medico','hospital','insumos medicos','quirurgico'] },
   { id: 'hormigon', name: 'Preformado de Hormigon', keywords: ['hormigon','concreto','prefabricado','premezclado','postes','vigas','losas','paneles','adoquines','adoquin','pavimento','intertrabado','tubos','ductos','camara inspeccion','pozos','bordillos','bovedilla','arqueta','base granular','adoquinado','baldosas','canaletas','cunetas','veredas','aceras','placas','elementos preformados'], excluded: ['oficina','mueble','computador','impresora','papeleria','software','camara fotografica'] },
+  { id: 'pallets', name: 'Pallets / Logistica / Almacenaje', keywords: ['pallet','palet','pallets','palletizado','palletizacion','estiba','estibado','estibar','transporte de carga','almacenaje','logistica','cadena de suministro','distribucion','carga y descarga','embalaje','envase','contenedor','sku','inventario','bodega','galpon logistico','centro de distribucion','manipulacion de carga','montacargas','elevador','conveyor','conveyors','transportador','racking','rack','anaquel','almacenamiento','despacho','fulfillment','cross docking','embalaje industrial','caja de carton','carton corrugado','exportacion','importacion','aduana','puerto','terminal portuaria','transporte terrestre','camion','flota vehicular','flete','fletamento','consolidacion de carga','desconsolidacion'], excluded: ['medico','hospital','insumos medicos','quirurgico','software','desarrollo software','aplicacion movil','consultoria juridica','estudio contable','seguro'] },
   { id: 'general', name: 'Perfil General', keywords: [], excluded: [] },
   { id: 'buceo', name: 'Importacion Equipo de Buceo', keywords: ['buceo','submarino','subacuatico','buceo tecnico','equipo de buceo','tanque de buceo','regulador de buceo','traje de buceo','mascara de buceo','aletas de buceo','buceo profesional','buceo industrial','escafandra autonoma'], excluded: ['medico','hospital','insumos medicos','paciente','quirurgico'] }
 ];
@@ -281,6 +282,7 @@ const BUSINESS_CRITERIA: Record<string, BusinessCriteria> = {
   buceo:        { minAmount: 1_000_000,   optimalAmount: 10_000_000 },
   imprenta:     { minAmount: 500_000,      optimalAmount: 20_000_000 },
   hormigon:     { minAmount: 1_000_000,    optimalAmount: 30_000_000 },
+  pallets:      { minAmount: 500_000,       optimalAmount: 15_000_000 },
   general:      { minAmount: 100_000,      optimalAmount: 1_000_000 }
 };
 

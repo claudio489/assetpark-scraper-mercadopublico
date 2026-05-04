@@ -131,6 +131,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 <option value="salud">Salud / Instituciones Publicas</option>
 <option value="imprenta">Imprenta / Publicidad</option>
 <option value="hormigon">Preformado de Hormigon</option>
+<option value="pallets">Pallets / Logistica / Almacenaje</option>
 <option value="general" selected>General (Todas las Activas)</option>
 <option value="buceo">Buceo / Deportes Acuaticos</option>
 </select></div>
@@ -157,6 +158,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 <option value="tecnologia">Tecnologia</option>
 <option value="salud">Salud</option>
 <option value="imprenta">Imprenta</option>
+<option value="pallets">Pallets / Logistica</option>
 <option value="buceo">Buceo</option>
 </select></div>
 <button class="btn" onclick="loadNovedades()">Actualizar</button>
@@ -181,6 +183,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 <option value="tecnologia">Tecnologia</option>
 <option value="salud">Salud</option>
 <option value="imprenta">Imprenta</option>
+<option value="pallets">Pallets / Logistica</option>
 <option value="buceo">Buceo</option>
 </select></div>
 <div class="ctrl-group"><label>Dias</label>
@@ -282,7 +285,7 @@ h+=card('Media',FMTN.format(md),'media');
 h+=card('Baja',FMTN.format(lo),'baja');
 h+=card('Postular',FMTN.format(po),'postular');
 h+=card('Evaluar',FMTN.format(ev),'evaluar');
-h+=card('Evitar',FMTN.format(ea),'evitar');
+h+=card('Revision',FMTN.format(ea),'evitar');
 h+=card('Monto Total',amt>0?FMT.format(amt):'N/D','monto');
 $('dash').innerHTML=h;$('cnt').textContent=tot>0?'('+tot+')':'';
 }catch(e){console.error('Dash error:',e);}
