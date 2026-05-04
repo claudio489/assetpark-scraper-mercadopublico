@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>AssetPark Licitaciones v5.1</title>
+<title>AssetPark Licitaciones</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
 body{background:linear-gradient(135deg,#0c1923 0%,#0f2235 50%,#0c1923 100%);color:#e2e8f0;min-height:100vh;padding:24px}
@@ -28,13 +28,11 @@ select:hover{border-color:rgba(0,212,255,.5)}
 select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,.15)}
 .btn{background:linear-gradient(135deg,#00a8ff,#0066cc);color:#fff;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.9rem;transition:all .2s;box-shadow:0 4px 15px rgba(0,168,255,.3)}
 .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,168,255,.4)}
-.btn:active{transform:translateY(0)}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 .spinner{display:none;width:18px;height:18px;border:3px solid rgba(0,212,255,.1);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .search-box{background:rgba(15,25,35,.8);border:1px solid rgba(0,212,255,.2);padding:10px 14px;border-radius:8px;color:#e2e8f0;font-size:.9rem;min-width:250px;transition:all .2s}
 .search-box:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,.15)}
-.search-box::placeholder{color:#5a7a8f}
 .dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px}
 .dash-card{background:linear-gradient(145deg,rgba(26,42,58,.8),rgba(20,35,50,.8));padding:16px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,.05);transition:all .2s;position:relative;overflow:hidden}
 .dash-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3);border-color:rgba(0,212,255,.2)}
@@ -50,16 +48,10 @@ select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,2
 .dash-card.novedades::before{background:linear-gradient(90deg,#00d4ff,#ff4757)}
 .dash-card.historial::before{background:linear-gradient(90deg,#a78bfa,#00d4ff)}
 .dash-num{font-size:1.7rem;font-weight:800;margin-top:4px}
-.dash-num.total{color:#00d4ff}
-.dash-num.alta{color:#ff4757}
-.dash-num.media{color:#ffa502}
-.dash-num.baja{color:#2ed573}
-.dash-num.postular{color:#2ed573}
-.dash-num.evaluar{color:#ffa502}
-.dash-num.evitar{color:#ff4757}
-.dash-num.monto{color:#a78bfa}
-.dash-num.novedades{color:#ff6b81}
-.dash-num.historial{color:#a78bfa}
+.dash-num.total{color:#00d4ff}.dash-num.alta{color:#ff4757}.dash-num.media{color:#ffa502}
+.dash-num.baja{color:#2ed573}.dash-num.postular{color:#2ed573}.dash-num.evaluar{color:#ffa502}
+.dash-num.evitar{color:#ff4757}.dash-num.monto{color:#a78bfa}
+.dash-num.novedades{color:#ff6b81}.dash-num.historial{color:#a78bfa}
 .dash-label{font-size:.75rem;color:#6b8fa3;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
 .table-wrap{background:linear-gradient(145deg,rgba(26,42,58,.6),rgba(20,35,50,.6));border-radius:12px;border:1px solid rgba(255,255,255,.05);overflow:hidden;margin-bottom:20px}
 table{width:100%;border-collapse:collapse;font-size:.83rem}
@@ -68,9 +60,7 @@ td{padding:10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:mid
 tr{cursor:pointer;transition:all .15s}
 tr:hover{background:rgba(0,212,255,.06)}
 .score{font-weight:800;font-size:1rem}
-.score-high{color:#ff4757}
-.score-med{color:#ffa502}
-.score-low{color:#2ed573}
+.score-high{color:#ff4757}.score-med{color:#ffa502}.score-low{color:#2ed573}
 .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .badge-POSTULAR{background:rgba(46,213,115,.15);color:#2ed573;border:1px solid rgba(46,213,115,.3)}
 .badge-EVALUAR{background:rgba(255,165,2,.15);color:#ffa502;border:1px solid rgba(255,165,2,.3)}
@@ -79,7 +69,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 .badge-VENCER{background:rgba(255,71,87,.2);color:#ff4757;border:1px solid rgba(255,71,87,.4);margin-left:6px}
 .monto{font-weight:600;color:#c4b5fd}
 .entidad{color:#8ab4c7;font-size:.8rem}
-.codigo{font-family:'SF Mono',monospace;font-size:.78rem;color:#5a7a8f;background:rgba(0,0,0,.2);padding:2px 8px;border-radius:4px}
+.codigo{font-family:monospace;font-size:.78rem;color:#5a7a8f;background:rgba(0,0,0,.2);padding:2px 8px;border-radius:4px}
 .cierre{font-size:.8rem}
 .cierre-urgente{color:#ff4757;font-weight:600}
 .cierre-normal{color:#8ab4c7}
@@ -126,9 +116,9 @@ tr:hover{background:rgba(0,212,255,.06)}
 
 <div class="nav-tabs">
 <button class="nav-tab on" onclick="setNavTab('pipeline')" id="nav-pipeline">Pipeline</button>
-<button class="nav-tab" onclick="setNavTab('novedades')" id="nav-novedades">Novedades <span id="badge-nov" style="display:none;background:#ff4757;color:#fff;font-size:.65rem;padding:1px 6px;border-radius:10px;margin-left:4px"></span></button>
+<button class="nav-tab" onclick="setNavTab('novedades')" id="nav-novedades">Novedades</button>
 <button class="nav-tab" onclick="setNavTab('vencer')" id="nav-vencer">Por Vencer</button>
-<button class="nav-tab" onclick="setNavTab('historial')" id="nav-historial">Historial (<span id="badge-hist">0</span>)</button>
+<button class="nav-tab" onclick="setNavTab('historial')" id="nav-historial">Historial</button>
 </div>
 
 <div id="view-pipeline">
@@ -243,27 +233,16 @@ const FMT=new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximum
 const FMTN=new Intl.NumberFormat('es-CL');
 let st={ops:[],filt:[],load:false,pid:'general',tab:1,search:''};
 function $(id){return document.getElementById(id)}
-
 function daysLeft(cierre){if(!cierre)return 999;const d=new Date(cierre),n=new Date();return Math.ceil((d-n)/(864e5))}
 function isNew(fecha){if(!fecha)return false;const d=new Date(fecha),n=new Date();return(n-d)<(7*864e5)}
 function isToday(fecha){if(!fecha)return false;const d=new Date(fecha);const n=new Date();return d.toDateString()===n.toDateString()}
-
-function getFiltered(){
-let f=st.ops;
-if(st.search){const s=st.search.toLowerCase();f=f.filter(o=>(o.title||'').toLowerCase().includes(s)||(o.entity||'').toLowerCase().includes(s)||(o.region||'').toLowerCase().includes(s)||(o.id||'').toLowerCase().includes(s)||(o.category||'').toLowerCase().includes(s))}
-if(st.tab===2)f=f.filter(o=>o.recommendation==='POSTULAR');
-if(st.tab===3)f=f.filter(o=>o.recommendation==='EVALUAR');
-if(st.tab===4)f=f.filter(o=>o.recommendation==='EVITAR');
-return f;
-}
+function getFiltered(){let f=st.ops;if(st.search){const s=st.search.toLowerCase();f=f.filter(o=>(o.title||'').toLowerCase().includes(s)||(o.entity||'').toLowerCase().includes(s)||(o.region||'').toLowerCase().includes(s)||(o.id||'').toLowerCase().includes(s)||(o.category||'').toLowerCase().includes(s))}if(st.tab===2)f=f.filter(o=>o.recommendation==='POSTULAR');if(st.tab===3)f=f.filter(o=>o.recommendation==='EVALUAR');if(st.tab===4)f=f.filter(o=>o.recommendation==='EVITAR');return f;}
 
 async function runPipe(){
 if(st.load)return;
 st.load=true;st.ops=[];st.filt=[];
-$('runBtn').disabled=true;
-$('spin').style.display='inline-block';
-$('err').classList.remove('show');
-$('succ').classList.remove('show');
+$('runBtn').disabled=true;$('spin').style.display='inline-block';
+$('err').classList.remove('show');$('succ').classList.remove('show');
 let data=null;
 try{
 const r=await fetch('/api/opportunities/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profileId:st.pid,limit:50})});
@@ -272,29 +251,21 @@ if(r.ok)data=await r.json();
 
 if(data&&data.success&&data.opportunities&&data.opportunities.length>0){
 st.ops=data.opportunities;
-const novedades=data.novedades||0;
-const histTotal=data.historialTotal||0;
-$('succ').textContent=data.opportunities.length+' oportunidades | '+novedades+' novedades | '+histTotal+' en historial';
+$('succ').textContent=data.opportunities.length+' oportunidades cargadas';
 $('succ').classList.add('show');
-if(novedades>0){$('badge-nov').textContent=novedades;$('badge-nov').style.display='inline';}
-$('badge-hist').textContent=histTotal;
 }else{
 st.ops=[];
 const pname=$('prof').options[$('prof').selectedIndex].text;
 $('err').textContent='Sin licitaciones activas para "'+pname+'". Intenta con otro perfil.';
 $('err').classList.add('show');
 }
-st.filt=getFiltered();
-try{renderDash();renderTbl();}catch(e){console.error('Render error:',e);}
-st.load=false;
-$('runBtn').disabled=false;
-$('spin').style.display='none';
+st.filt=getFiltered();renderDash();renderTbl();
+st.load=false;$('runBtn').disabled=false;$('spin').style.display='none';
 }
 
 function renderDash(){
 try{
-const f=st.filt;
-const tot=f.length;
+const f=st.filt;const tot=f.length;
 const hi=f.filter(o=>o.priority==='alta'||o.priority==='high').length;
 const md=f.filter(o=>o.priority==='media'||o.priority==='medium').length;
 const lo=f.filter(o=>o.priority==='baja'||o.priority==='low').length;
@@ -312,8 +283,7 @@ h+=card('Postular',FMTN.format(po),'postular');
 h+=card('Evaluar',FMTN.format(ev),'evaluar');
 h+=card('Evitar',FMTN.format(ea),'evitar');
 h+=card('Monto Total',amt>0?FMT.format(amt):'N/D','monto');
-$('dash').innerHTML=h;
-$('cnt').textContent=tot>0?'('+tot+')':'';
+$('dash').innerHTML=h;$('cnt').textContent=tot>0?'('+tot+')':'';
 }catch(e){console.error('Dash error:',e);}
 }
 
@@ -323,9 +293,7 @@ const f=data||st.filt;
 if(!f||f.length===0){$('tbl').innerHTML='<tr><td colspan="10" class="empty"><div class="empty-icon">&#128269;</div>No hay licitaciones para mostrar.</td></tr>';return;}
 let h='';
 for(const o of f){
-const sc=o.score||0;
-const bs=o.businessScore||0;
-const rec=o.recommendation||'EVALUAR';
+const sc=o.score||0;const bs=o.businessScore||0;const rec=o.recommendation||'EVALUAR';
 const scClass=sc>=80?'score-high':sc>=60?'score-med':'score-low';
 const amt=o.amount?FMT.format(o.amount):'<span style="color:#6b8fa3;font-size:.75rem">Oculto</span>';
 const dl=daysLeft(o.closingDate);
@@ -336,7 +304,7 @@ if(o.firstSeen&&isToday(o.firstSeen))badges+='<span class="badge badge-NEW">HOY<
 else if(isNew(o.firstSeen||o.date))badges+='<span class="badge badge-NEW">NUEVA</span>';
 if(dl<=7&&dl>0)badges+='<span class="badge badge-VENCER">VENCE</span>';
 const url=o.url||'#';
-h+='<tr onclick="openMod(''+escJS(o.id||'')+'')">';
+h+='<tr onclick="openMod(\''+escJS(o.id||'')+'\')">';
 h+='<td><span class="score '+scClass+'">'+sc+'</span></td>';
 h+='<td><strong>'+escHTML(o.title||'')+'</strong>'+badges+'</td>';
 h+='<td><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
@@ -412,9 +380,7 @@ if(data.success&&data.items){
 $('nov-cnt').textContent=data.count>0?'('+data.count+' nuevas)':'';
 function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
 $('dash').innerHTML=card('Novedades 24h',data.count,'novedades')+card('En historial',$('badge-hist').textContent||'0','historial');
-$('dash').style.display='grid';
-st.histData=data.items;
-renderTbl(data.items);
+$('dash').style.display='grid';st.histData=data.items;renderTbl(data.items);
 }else{$('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin novedades recientes</td></tr>';}
 }catch(e){console.error('Nov error:',e);}
 }
@@ -428,9 +394,7 @@ if(data.success&&data.items){
 $('venc-cnt').textContent=data.count>0?'('+data.count+' por vencer)':'';
 function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
 $('dash').innerHTML=card('Por vencer 7d',data.count,'alta');
-$('dash').style.display='grid';
-st.histData=data.items;
-renderTbl(data.items);
+$('dash').style.display='grid';st.histData=data.items;renderTbl(data.items);
 }else{$('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin licitaciones por vencer</td></tr>';}
 }catch(e){console.error('Venc error:',e);}
 }
@@ -438,9 +402,7 @@ renderTbl(data.items);
 async function loadHistorial(){
 $('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando historial...</td></tr>';
 try{
-const profile=$('hist-prof').value;
-const days=$('hist-days').value;
-const search=$('hist-search').value;
+const profile=$('hist-prof').value;const days=$('hist-days').value;const search=$('hist-search').value;
 let url='/api/opportunities/historial?days='+days;
 if(profile!=='all')url+='&profileId='+profile;
 if(search)url+='&search='+encodeURIComponent(search);
@@ -451,24 +413,20 @@ $('hist-cnt').textContent=data.count>0?'('+data.count+')':'';
 $('badge-hist').textContent=data.historialTotal||data.count;
 function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
 $('dash').innerHTML=card('Historial '+days+'d',data.count,'historial');
-$('dash').style.display='grid';
-st.histData=data.items;
-renderTbl(data.items);
+$('dash').style.display='grid';st.histData=data.items;renderTbl(data.items);
 }else{$('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin datos en historial</td></tr>';}
 }catch(e){console.error('Hist error:',e);}
 }
 
 function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\'").replace(/"/g,'\"').replace(/
-/g,'\n').replace(//g,'\r')}
+function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r')}
 function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 
 (async function init(){
 try{
 console.log('DEBUG init v5.1');
 document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe();});
-await runPipe();
-loadHistorial();
+await runPipe();loadHistorial();
 console.log('DEBUG init complete');
 }catch(e){console.error('Init error:',e);}
 })();
