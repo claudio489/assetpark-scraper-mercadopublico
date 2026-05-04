@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>AssetPark Licitaciones v5.2</title>
+<title>AssetPark Licitaciones</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
 body{background:linear-gradient(135deg,#0c1923 0%,#0f2235 50%,#0c1923 100%);color:#e2e8f0;min-height:100vh;padding:24px}
@@ -117,17 +117,17 @@ tr:hover{background:rgba(0,212,255,.06)}
 <div class="logo">AP</div>
 <h1>AssetPark Licitaciones</h1>
 <span class="version">v5.2</span>
-<button class="btn btn-login" id="loginBtn">Login</button>
+<button class="btn btn-login" id="loginBtn" style="margin-left:12px;padding:6px 14px;font-size:.75rem">Login</button>
 <span id="userName" style="color:#00d4ff;font-size:.75rem;margin-left:8px;display:none"></span>
-<button class="btn btn-logout" id="logoutBtn" style="display:none">Salir</button>
+<button class="btn btn-logout" id="logoutBtn" style="display:none;margin-left:8px;padding:6px 14px;font-size:.75rem">Salir</button>
 </div>
 <p class="subtitle">Inteligencia de licitaciones publicas — 30 dias de historial + novedades automaticas</p>
 
 <div class="nav-tabs">
-<button class="nav-tab on" id="nav-pipeline">Pipeline</button>
-<button class="nav-tab" id="nav-novedades">Novedades <span id="badge-nov" style="display:none;background:#ff4757;color:#fff;font-size:.65rem;padding:1px 6px;border-radius:10px;margin-left:4px"></span></button>
-<button class="nav-tab" id="nav-vencer">Por Vencer</button>
-<button class="nav-tab" id="nav-historial">Historial (<span id="badge-hist">0</span>)</button>
+<button class="nav-tab on" onclick="setNavTab('pipeline')" id="nav-pipeline">Pipeline</button>
+<button class="nav-tab" onclick="setNavTab('novedades')" id="nav-novedades">Novedades <span id="badge-nov" style="display:none;background:#ff4757;color:#fff;font-size:.65rem;padding:1px 6px;border-radius:10px;margin-left:4px"></span></button>
+<button class="nav-tab" onclick="setNavTab('vencer')" id="nav-vencer">Por Vencer</button>
+<button class="nav-tab" onclick="setNavTab('historial')" id="nav-historial">Historial (<span id="badge-hist">0</span>)</button>
 </div>
 
 <div id="view-pipeline">
@@ -139,26 +139,26 @@ tr:hover{background:rgba(0,212,255,.06)}
 <option value="salud">Salud / Instituciones Publicas</option>
 <option value="imprenta">Imprenta / Publicidad</option>
 <option value="hormigon">Preformado de Hormigon</option>
-<option value="general" selected>General (Todas las Activas)</option>
+<option value="general">General (Todas las Activas)</option>
 <option value="buceo">Buceo / Deportes Acuaticos</option>
 </select></div>
-<button class="btn" id="runBtn">Ejecutar Pipeline</button>
+<button class="btn" id="runBtn" onclick="runPipe()">Ejecutar Pipeline</button>
 <div class="spinner" id="spin"></div>
 <span id="cnt" style="color:#00d4ff;font-weight:700"></span>
-<input class="search-box" id="search" placeholder="Buscar por titulo, entidad, region...">
+<input class="search-box" id="search" placeholder="Buscar por titulo, entidad, region..." oninput="filterTable()">
 </div>
 <div class="tabs">
-<button class="tab on" id="t1">Todas</button>
-<button class="tab" id="t2">Postular</button>
-<button class="tab" id="t3">Evaluar</button>
-<button class="tab" id="t4">Evitar</button>
+<button class="tab on" onclick="setTab(1)" id="t1">Todas</button>
+<button class="tab" onclick="setTab(2)" id="t2">Postular</button>
+<button class="tab" onclick="setTab(3)" id="t3">Evaluar</button>
+<button class="tab" onclick="setTab(4)" id="t4">Evitar</button>
 </div>
 </div>
 
 <div id="view-novedades" style="display:none">
 <div class="controls">
 <div class="ctrl-group"><label>Filtro</label>
-<select id="nov-filter">
+<select id="nov-filter" onchange="loadNovedades()">
 <option value="all">Todas las novedades</option>
 <option value="constructora">Constructora</option>
 <option value="hormigon">Preformado de Hormigon</option>
@@ -167,14 +167,14 @@ tr:hover{background:rgba(0,212,255,.06)}
 <option value="imprenta">Imprenta</option>
 <option value="buceo">Buceo</option>
 </select></div>
-<button class="btn" id="novBtn">Actualizar</button>
+<button class="btn" onclick="loadNovedades()">Actualizar</button>
 <span id="nov-cnt" style="color:#ff6b81;font-weight:700"></span>
 </div>
 </div>
 
 <div id="view-vencer" style="display:none">
 <div class="controls">
-<button class="btn" id="vencBtn">Actualizar</button>
+<button class="btn" onclick="loadVencer()">Actualizar</button>
 <span id="venc-cnt" style="color:#ff4757;font-weight:700"></span>
 </div>
 </div>
@@ -182,7 +182,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 <div id="view-historial" style="display:none">
 <div class="controls">
 <div class="ctrl-group"><label>Perfil</label>
-<select id="hist-prof">
+<select id="hist-prof" onchange="loadHistorial()">
 <option value="all">Todos los perfiles</option>
 <option value="constructora">Constructora</option>
 <option value="hormigon">Preformado de Hormigon</option>
@@ -192,13 +192,13 @@ tr:hover{background:rgba(0,212,255,.06)}
 <option value="buceo">Buceo</option>
 </select></div>
 <div class="ctrl-group"><label>Dias</label>
-<select id="hist-days">
+<select id="hist-days" onchange="loadHistorial()">
 <option value="7">7 dias</option>
 <option value="14">14 dias</option>
 <option value="30" selected>30 dias</option>
 </select></div>
-<input class="search-box" id="hist-search" placeholder="Buscar en historial...">
-<button class="btn" id="histBtn">Actualizar</button>
+<input class="search-box" id="hist-search" placeholder="Buscar en historial..." oninput="loadHistorial()">
+<button class="btn" onclick="loadHistorial()">Actualizar</button>
 <span id="hist-cnt" style="color:#a78bfa;font-weight:700"></span>
 </div>
 </div>
@@ -219,20 +219,20 @@ tr:hover{background:rgba(0,212,255,.06)}
 </div>
 
 <!-- LOGIN MODAL -->
-<div class="modal" id="loginMod">
+<div class="modal" id="loginMod" onclick="if(event.target===this)clsLogin()">
 <div class="modal-card" style="max-width:400px">
-<div class="modal-header"><div class="modal-title">Iniciar Sesion</div><button class="modal-close" id="loginClose">Cerrar</button></div>
+<div class="modal-header"><div class="modal-title">Iniciar Sesion</div><button class="modal-close" onclick="clsLogin()">Cerrar</button></div>
 <div class="modal-body">
 <div class="modal-row"><span class="modal-label">Email</span><input id="loginEmail" type="email" class="search-box" style="flex:1" placeholder="admin@assetpark.cl"></div>
 <div class="modal-row"><span class="modal-label">Password</span><input id="loginPass" type="password" class="search-box" style="flex:1" placeholder="Password"></div>
 <div class="modal-row" id="loginErr" style="color:#ff4757;font-size:.85rem;display:none"></div>
-<div class="modal-actions"><button class="modal-btn primary" id="loginSubmit">Ingresar</button><button class="modal-btn secondary" id="loginCancel">Cancelar</button></div>
+<div class="modal-actions"><button class="modal-btn primary" onclick="doLogin()">Ingresar</button><button class="modal-btn secondary" onclick="clsLogin()">Cancelar</button></div>
 </div></div></div>
 
 <!-- DETAIL MODAL -->
-<div class="modal" id="mod">
+<div class="modal" id="mod" onclick="if(event.target===this)clsMod()">
 <div class="modal-card">
-<div class="modal-header"><div class="modal-title" id="mt"></div><button class="modal-close" id="modClose">Cerrar</button></div>
+<div class="modal-header"><div class="modal-title" id="mt"></div><button class="modal-close" onclick="clsMod()">Cerrar</button></div>
 <div class="modal-body">
 <div class="modal-row"><span class="modal-label">Descripcion</span><span class="modal-value" id="md"></span></div>
 <div class="modal-row"><span class="modal-label">Entidad</span><span class="modal-value" id="me"></span></div>
@@ -245,357 +245,333 @@ tr:hover{background:rgba(0,212,255,.06)}
 <div class="modal-row"><span class="modal-label">Analisis</span><ul class="reason-list" id="mrs"></ul></div>
 <div class="modal-actions">
 <a class="modal-btn primary" id="mu" href="#" target="_blank">Ver en MercadoPublico</a>
-<button class="modal-btn secondary" id="modClose2">Cerrar</button>
+<button class="modal-btn secondary" onclick="clsMod()">Cerrar</button>
 </div>
 </div></div></div>
 
 <script>
 const FMT=new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0});
 const FMTN=new Intl.NumberFormat('es-CL');
-
-let st={ops:[],filt:[],load:false,pid:'general',tab:1,search:''};
+let st={ops:[],filt:[],load:false,pid:'constructora',tab:1,search:''};
 let AUTH_TOKEN=localStorage.getItem('ap_token')||'';
 let AUTH_USER=null;
-
 function $(id){return document.getElementById(id)}
 
 function daysLeft(cierre){if(!cierre)return 999;const d=new Date(cierre),n=new Date();return Math.ceil((d-n)/(864e5))}
 function isNew(fecha){if(!fecha)return false;const d=new Date(fecha),n=new Date();return(n-d)<(7*864e5)}
 function isToday(fecha){if(!fecha)return false;const d=new Date(fecha);const n=new Date();return d.toDateString()===n.toDateString()}
 
-function authHeaders(){
-  return AUTH_TOKEN?{'Authorization':'Bearer '+AUTH_TOKEN,'Content-Type':'application/json'}:{'Content-Type':'application/json'};
-}
+function authHeaders(){return AUTH_TOKEN?{'Authorization':'Bearer '+AUTH_TOKEN,'Content-Type':'application/json'}:{'Content-Type':'application/json'};}
 
 function getFiltered(){
-  let f=st.ops;
-  if(st.search){const s=st.search.toLowerCase();f=f.filter(o=>(o.title||'').toLowerCase().includes(s)||(o.entity||'').toLowerCase().includes(s)||(o.region||'').toLowerCase().includes(s)||(o.id||'').toLowerCase().includes(s)||(o.category||'').toLowerCase().includes(s))}
-  if(st.tab===2)f=f.filter(o=>o.recommendation==='POSTULAR');
-  if(st.tab===3)f=f.filter(o=>o.recommendation==='EVALUAR');
-  if(st.tab===4)f=f.filter(o=>o.recommendation==='EVITAR');
-  return f;
+let f=st.ops;
+if(st.search){const s=st.search.toLowerCase();f=f.filter(o=>(o.title||'').toLowerCase().includes(s)||(o.entity||'').toLowerCase().includes(s)||(o.region||'').toLowerCase().includes(s)||(o.id||'').toLowerCase().includes(s)||(o.category||'').toLowerCase().includes(s))}
+if(st.tab===2)f=f.filter(o=>o.recommendation==='POSTULAR');
+if(st.tab===3)f=f.filter(o=>o.recommendation==='EVALUAR');
+if(st.tab===4)f=f.filter(o=>o.recommendation==='EVITAR');
+return f;
 }
 
 async function runPipe(){
-  if(st.load)return;
-  st.load=true;st.ops=[];st.filt=[];
-  $('runBtn').disabled=true;
-  $('spin').style.display='inline-block';
-  $('err').classList.remove('show');
-  $('succ').classList.remove('show');
-  let data=null;
-  try{
-    const r=await fetch('/api/opportunities/run',{method:'POST',headers:authHeaders(),body:JSON.stringify({profileId:st.pid,limit:50})});
-    if(r.ok)data=await r.json();
-  }catch(e){console.error('Error fetch:',e.message);}
+if(st.load)return;
+st.load=true;st.ops=[];st.filt=[];
+$('runBtn').disabled=true;
+$('spin').style.display='inline-block';
+$('err').classList.remove('show');
+$('succ').classList.remove('show');
+let data=null;
+try{
+const r=await fetch('/api/opportunities/run',{method:'POST',headers:authHeaders(),body:JSON.stringify({profileId:st.pid,limit:50})});
+if(r.ok)data=await r.json();
+else{console.error('HTTP',r.status);}
+}catch(e){console.error('Error fetch:',e.message);}
 
-  if(data&&data.success&&data.opportunities&&data.opportunities.length>0){
-    st.ops=data.opportunities;
-    const novedades=data.novedades||0;
-    const histTotal=data.historialTotal||0;
-    $('succ').textContent=data.opportunities.length+' oportunidades | '+novedades+' novedades | '+histTotal+' en historial';
-    $('succ').classList.add('show');
-    if(novedades>0){$('badge-nov').textContent=novedades;$('badge-nov').style.display='inline';}
-    $('badge-hist').textContent=histTotal;
-  }else{
-    st.ops=[];
-    const pname=$('prof').options[$('prof').selectedIndex].text;
-    $('err').textContent='Sin licitaciones activas para "'+pname+'". Intenta con otro perfil.';
-    $('err').classList.add('show');
-  }
-  st.filt=getFiltered();
-  renderDash();renderTbl();
-  st.load=false;
-  $('runBtn').disabled=false;
-  $('spin').style.display='none';
+if(data&&data.success&&data.opportunities&&data.opportunities.length>0){
+st.ops=data.opportunities;
+const novedades=data.novedades||0;
+const histTotal=data.historialTotal||0;
+$('succ').textContent=data.opportunities.length+' oportunidades | '+novedades+' novedades | '+histTotal+' en historial';
+$('succ').classList.add('show');
+if(novedades>0){$('badge-nov').textContent=novedades;$('badge-nov').style.display='inline';}
+$('badge-hist').textContent=histTotal;
+}else{
+st.ops=[];
+const pname=$('prof').options[$('prof').selectedIndex].text;
+const msg=data&&data.error?data.error:'Sin licitaciones activas para "'+pname+'".';
+$('err').textContent=msg;
+$('err').classList.add('show');
+}
+st.filt=getFiltered();
+try{renderDash();renderTbl();}catch(e){console.error('Render error:',e);}
+st.load=false;
+$('runBtn').disabled=false;
+$('spin').style.display='none';
 }
 
 function renderDash(){
-  const f=st.filt;
-  const tot=f.length;
-  const hi=f.filter(o=>o.priority==='alta'||o.priority==='high').length;
-  const md=f.filter(o=>o.priority==='media'||o.priority==='medium').length;
-  const lo=f.filter(o=>o.priority==='baja'||o.priority==='low').length;
-  const po=f.filter(o=>o.recommendation==='POSTULAR').length;
-  const ev=f.filter(o=>o.recommendation==='EVALUAR').length;
-  const ea=f.filter(o=>o.recommendation==='EVITAR').length;
-  const amt=f.reduce((a,o)=>a+(o.amount||0),0);
-
-  function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
-  let h='';
-  h+=card('Total',FMTN.format(tot),'total');
-  h+=card('Alta',FMTN.format(hi),'alta');
-  h+=card('Media',FMTN.format(md),'media');
-  h+=card('Baja',FMTN.format(lo),'baja');
-  h+=card('Postular',FMTN.format(po),'postular');
-  h+=card('Evaluar',FMTN.format(ev),'evaluar');
-  h+=card('Evitar',FMTN.format(ea),'evitar');
-  h+=card('Monto Total',amt>0?FMT.format(amt):'N/D','monto');
-  $('dash').innerHTML=h;
-  $('cnt').textContent=tot>0?'('+tot+')':'';
+try{
+const f=st.filt;
+const tot=f.length;
+const hi=f.filter(o=>o.priority==='alta'||o.priority==='high').length;
+const md=f.filter(o=>o.priority==='media'||o.priority==='medium').length;
+const lo=f.filter(o=>o.priority==='baja'||o.priority==='low').length;
+const po=f.filter(o=>o.recommendation==='POSTULAR').length;
+const ev=f.filter(o=>o.recommendation==='EVALUAR').length;
+const ea=f.filter(o=>o.recommendation==='EVITAR').length;
+const amt=f.reduce((a,o)=>a+(o.amount||0),0);
+function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
+let h='';
+h+=card('Total',FMTN.format(tot),'total');
+h+=card('Alta',FMTN.format(hi),'alta');
+h+=card('Media',FMTN.format(md),'media');
+h+=card('Baja',FMTN.format(lo),'baja');
+h+=card('Postular',FMTN.format(po),'postular');
+h+=card('Evaluar',FMTN.format(ev),'evaluar');
+h+=card('Evitar',FMTN.format(ea),'evitar');
+h+=card('Monto Total',amt>0?FMT.format(amt):'N/D','monto');
+$('dash').innerHTML=h;
+$('cnt').textContent=tot>0?'('+tot+')':'';
+}catch(e){console.error('Dash error:',e);}
 }
 
 function renderTbl(data){
-  const f=data||st.filt;
-  if(!f||f.length===0){
-    $('tbl').innerHTML='<tr><td colspan="10" class="empty"><div class="empty-icon">&#128269;</div>No hay licitaciones para mostrar.</td></tr>';
-    return;
-  }
-  let h='';
-  for(const o of f){
-    const sc=o.score||0;
-    const bs=o.businessScore||0;
-    const rec=o.recommendation||'EVALUAR';
-    const scClass=sc>=80?'score-high':sc>=60?'score-med':'score-low';
-    const amt=o.amount?FMT.format(o.amount):'<span style="color:#6b8fa3;font-size:.75rem">Oculto</span>';
-    const dl=daysLeft(o.closingDate);
-    const cierreClass=dl<=15?'cierre-urgente':'cierre-normal';
-    const cierreText=o.closingDate?o.closingDate+' <small>('+(dl<=0?'Vencida':dl+' dias')+')</small>':'<span style="color:#5a7a8f">Sin fecha</span>';
-    let badges='';
-    if(o.firstSeen&&isToday(o.firstSeen))badges+='<span class="badge badge-NEW">HOY</span>';
-    else if(isNew(o.firstSeen||o.date))badges+='<span class="badge badge-NEW">NUEVA</span>';
-    if(dl<=7&&dl>0)badges+='<span class="badge badge-VENCER">VENCE</span>';
-    const url=o.url||'#';
-    h+='<tr onclick="openMod(\''+escJS(o.id||'')+'\')">';
-    h+='<td><span class="score '+scClass+'">'+sc+'</span></td>';
-    h+='<td><strong>'+escHTML(o.title||'')+'</strong>'+badges+'</td>';
-    h+='<td><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
-    h+='<td>'+escHTML(o.region||'')+'</td>';
-    h+='<td class="monto">'+amt+'</td>';
-    h+='<td><code class="codigo">'+(o.id||'')+'</code></td>';
-    h+='<td><strong>'+bs+'/100</strong></td>';
-    h+='<td><span class="badge badge-'+rec+'">'+rec+'</span></td>';
-    h+='<td class="'+cierreClass+'">'+cierreText+'</td>';
-    h+='<td><a class="a-link" href="'+escURL(url)+'" target="_blank" onclick="event.stopPropagation()">Ver &rarr;</a></td>';
-    h+='</tr>';
-  }
-  $('tbl').innerHTML=h;
+try{
+const f=data||st.filt;
+if(!f||f.length===0){$('tbl').innerHTML='<tr><td colspan="10" class="empty"><div class="empty-icon">&#128269;</div>No hay licitaciones para mostrar.</td></tr>';return;}
+let h='';
+for(const o of f){
+const sc=o.score||0;
+const bs=o.businessScore||0;
+const rec=o.recommendation||'EVALUAR';
+const scClass=sc>=80?'score-high':sc>=60?'score-med':'score-low';
+const amt=o.amount?FMT.format(o.amount):'<span style="color:#6b8fa3;font-size:.75rem">Oculto</span>';
+const dl=daysLeft(o.closingDate);
+const cierreClass=dl<=15?'cierre-urgente':'cierre-normal';
+const cierreText=o.closingDate?o.closingDate+' <small>('+(dl<=0?'Vencida':dl+' dias')+')</small>':'<span style="color:#5a7a8f">Sin fecha</span>';
+let badges='';
+if(o.firstSeen&&isToday(o.firstSeen))badges+='<span class="badge badge-NEW">HOY</span>';
+else if(isNew(o.firstSeen||o.date))badges+='<span class="badge badge-NEW">NUEVA</span>';
+if(dl<=7&&dl>0)badges+='<span class="badge badge-VENCER">VENCE</span>';
+const url=o.url||'#';
+h+='<tr onclick="openMod(\''+escJS(o.id||'')+'\')">';
+h+='<td><span class="score '+scClass+'">'+sc+'</span></td>';
+h+='<td><strong>'+escHTML(o.title||'')+'</strong>'+badges+'</td>';
+h+='<td><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
+h+='<td>'+escHTML(o.region||'')+'</td>';
+h+='<td class="monto">'+amt+'</td>';
+h+='<td><code class="codigo">'+(o.id||'')+'</code></td>';
+h+='<td><strong>'+bs+'/100</strong></td>';
+h+='<td><span class="badge badge-'+rec+'">'+rec+'</span></td>';
+h+='<td class="'+cierreClass+'">'+cierreText+'</td>';
+h+='<td><a class="a-link" href="'+escURL(url)+'" target="_blank" onclick="event.stopPropagation()">Ver &rarr;</a></td>';
+h+='</tr>';
+}
+$('tbl').innerHTML=h;
+}catch(e){console.error('Tbl error:',e);}
 }
 
 function openMod(id){
-  let o=st.ops.find(x=>x.id===id);
-  if(!o)o=st.histData&&st.histData.find?st.histData.find(x=>x.id===id):null;
-  if(!o)return;
-  $('mt').textContent=o.title||'';
-  $('md').textContent=o.description||o.title||'Sin descripcion';
-  $('me').textContent=o.entity||'';
-  $('mr').textContent=o.region||'';
-  $('mm').innerHTML=o.amount?FMT.format(o.amount):'Monto oculto (licitacion activa)';
-  $('mc').textContent=o.id||'';
-  const dl=daysLeft(o.closingDate);
-  $('mcd').innerHTML=o.closingDate?o.closingDate+' ('+(dl<=0?'Vencida':dl+' dias restantes')+')':'Sin fecha';
-  const fs=o.firstSeen?new Date(o.firstSeen).toLocaleDateString('es-CL'):(o.date||'Desconocida');
-  $('mfs').textContent=fs;
-  $('mb').innerHTML='<strong style="color:'+(o.businessScore>=60?'#2ed573':o.businessScore>=40?'#ffa502':'#ff4757')+'">'+(o.businessScore||0)+'/100</strong>';
-  const reasons=o.businessReasons||['Sin analisis detallado'];
-  $('mrs').innerHTML=reasons.map(r=>{
-    const cls=r.toLowerCase().includes('monto')||r.toLowerCase().includes('riesgo')||r.toLowerCase().includes('cuidado')?'riesgo':r.toLowerCase().includes('oportunidad')||r.toLowerCase().includes('match')||r.toLowerCase().includes('buen')?'oportunidad':'';
-    return'<li class="'+cls+'">'+escHTML(r)+'</li>'
-  }).join('');
-  $('mu').href=o.url||'#';
-  $('mod').classList.add('show');
+try{
+let o=st.ops.find(x=>x.id===id);
+if(!o)o=st.histData&&st.histData.find?st.histData.find(x=>x.id===id):null;
+if(!o)return;
+$('mt').textContent=o.title||'';
+$('md').textContent=o.description||o.title||'Sin descripcion';
+$('me').textContent=o.entity||'';
+$('mr').textContent=o.region||'';
+$('mm').innerHTML=o.amount?FMT.format(o.amount):'Monto oculto (licitacion activa)';
+$('mc').textContent=o.id||'';
+const dl=daysLeft(o.closingDate);
+$('mcd').innerHTML=o.closingDate?o.closingDate+' ('+(dl<=0?'Vencida':dl+' dias restantes')+')':'Sin fecha';
+const fs=o.firstSeen?new Date(o.firstSeen).toLocaleDateString('es-CL'):(o.date||'Desconocida');
+$('mfs').textContent=fs;
+$('mb').innerHTML='<strong style="color:'+(o.businessScore>=60?'#2ed573':o.businessScore>=40?'#ffa502':'#ff4757')+'">'+(o.businessScore||0)+'/100</strong>';
+const reasons=o.businessReasons||['Sin analisis detallado'];
+$('mrs').innerHTML=reasons.map(r=>{
+const cls=r.toLowerCase().includes('monto')||r.toLowerCase().includes('riesgo')||r.toLowerCase().includes('cuidado')?'riesgo':r.toLowerCase().includes('oportunidad')||r.toLowerCase().includes('match')||r.toLowerCase().includes('buen')?'oportunidad':'';
+return'<li class="'+cls+'">'+escHTML(r)+'</li>'
+}).join('');
+$('mu').href=o.url||'#';
+$('mod').classList.add('show');
+}catch(e){console.error('Mod error:',e);}
 }
 function clsMod(){$('mod').classList.remove('show')}
 
 function setTab(n){
-  st.tab=n;
-  for(let i=1;i<=4;i++){document.getElementById('t'+i).classList.toggle('on',i===n)}
-  st.filt=getFiltered();renderDash();renderTbl();
+st.tab=n;
+for(let i=1;i<=4;i++){document.getElementById('t'+i).classList.toggle('on',i===n)}
+st.filt=getFiltered();renderDash();renderTbl();
 }
 function filterTable(){
-  st.search=$('search').value;
-  st.filt=getFiltered();renderDash();renderTbl();
+st.search=$('search').value;
+st.filt=getFiltered();renderDash();renderTbl();
 }
 
-// ========== NAV TABS ==========
 function setNavTab(tab){
-  st.nav=tab;
-  ['pipeline','novedades','vencer','historial'].forEach(t=>{
-    document.getElementById('view-'+t).style.display=t===tab?'block':'none';
-    document.getElementById('nav-'+t).classList.toggle('on',t===tab);
-  });
-  $('dash').style.display=tab==='pipeline'?'grid':'none';
-  if(tab==='novedades')loadNovedades();
-  if(tab==='vencer')loadVencer();
-  if(tab==='historial')loadHistorial();
-  if(tab==='pipeline'){renderDash();renderTbl();}
+st.nav=tab;
+['pipeline','novedades','vencer','historial'].forEach(t=>{
+document.getElementById('view-'+t).style.display=t===tab?'block':'none';
+document.getElementById('nav-'+t).classList.toggle('on',t===tab);
+});
+$('dash').style.display=tab==='pipeline'?'grid':'none';
+if(tab==='novedades')loadNovedades();
+if(tab==='vencer')loadVencer();
+if(tab==='historial')loadHistorial();
+if(tab==='pipeline'){renderDash();renderTbl();}
 }
 
 async function loadNovedades(){
-  $('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando novedades...</td></tr>';
-  try{
-    const r=await fetch('/api/opportunities/novedades',{headers:authHeaders()});
-    const data=await r.json();
-    if(data.success&&data.items){
-      $('nov-cnt').textContent=data.count>0?'('+data.count+' nuevas)':'';
-      function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
-      $('dash').innerHTML=card('Novedades 24h',data.count,'novedades')+card('En historial',$('badge-hist').textContent||'0','historial');
-      $('dash').style.display='grid';
-      st.histData=data.items;
-      renderTbl(data.items);
-    }else{
-      $('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin novedades recientes</td></tr>';
-    }
-  }catch(e){console.error('Error novedades:',e);}
+$('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando novedades...</td></tr>';
+try{
+const r=await fetch('/api/opportunities/novedades',{headers:authHeaders()});
+const data=await r.json();
+if(data.success&&data.items){
+$('nov-cnt').textContent=data.count>0?'('+data.count+' nuevas)':'';
+function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
+$('dash').innerHTML=card('Novedades 24h',data.count,'novedades')+card('En historial',$('badge-hist').textContent||'0','historial');
+$('dash').style.display='grid';
+st.histData=data.items;
+renderTbl(data.items);
+}else{$('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin novedades recientes</td></tr>';}
+}catch(e){console.error('Nov error:',e);}
 }
 
 async function loadVencer(){
-  $('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando por vencer...</td></tr>';
-  try{
-    const r=await fetch('/api/opportunities/vencer',{headers:authHeaders()});
-    const data=await r.json();
-    if(data.success&&data.items){
-      $('venc-cnt').textContent=data.count>0?'('+data.count+' por vencer)':'';
-      function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
-      $('dash').innerHTML=card('Por vencer 7d',data.count,'alta');
-      $('dash').style.display='grid';
-      st.histData=data.items;
-      renderTbl(data.items);
-    }else{
-      $('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin licitaciones por vencer</td></tr>';
-    }
-  }catch(e){console.error('Error vencer:',e);}
+$('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando por vencer...</td></tr>';
+try{
+const r=await fetch('/api/opportunities/vencer',{headers:authHeaders()});
+const data=await r.json();
+if(data.success&&data.items){
+$('venc-cnt').textContent=data.count>0?'('+data.count+' por vencer)':'';
+function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
+$('dash').innerHTML=card('Por vencer 7d',data.count,'alta');
+$('dash').style.display='grid';
+st.histData=data.items;
+renderTbl(data.items);
+}else{$('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin licitaciones por vencer</td></tr>';}
+}catch(e){console.error('Venc error:',e);}
 }
 
 async function loadHistorial(){
-  $('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando historial...</td></tr>';
-  try{
-    const profile=$('hist-prof').value;
-    const days=$('hist-days').value;
-    const search=$('hist-search').value;
-    let url='/api/opportunities/historial?days='+days;
-    if(profile!=='all')url+='&profileId='+profile;
-    if(search)url+='&search='+encodeURIComponent(search);
-    const r=await fetch(url,{headers:authHeaders()});
-    const data=await r.json();
-    if(data.success&&data.items){
-      $('hist-cnt').textContent=data.count>0?'('+data.count+')':'';
-      $('badge-hist').textContent=data.historialTotal||data.count;
-      function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
-      $('dash').innerHTML=card('Historial '+days+'d',data.count,'historial');
-      $('dash').style.display='grid';
-      st.histData=data.items;
-      renderTbl(data.items);
-    }else{
-      $('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin datos en historial</td></tr>';
-    }
-  }catch(e){console.error('Error historial:',e);}
+$('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando historial...</td></tr>';
+try{
+const profile=$('hist-prof').value;
+const days=$('hist-days').value;
+const search=$('hist-search').value;
+let url='/api/opportunities/historial?days='+days;
+if(profile!=='all')url+='&profileId='+profile;
+if(search)url+='&search='+encodeURIComponent(search);
+const r=await fetch(url,{headers:authHeaders()});
+const data=await r.json();
+if(data.success&&data.items){
+$('hist-cnt').textContent=data.count>0?'('+data.count+')':'';
+$('badge-hist').textContent=data.historialTotal||data.count;
+function card(t,n,c){return'<div class="dash-card '+c+'"><div class="dash-label">'+t+'</div><div class="dash-num '+c+'">'+n+'</div></div>'}
+$('dash').innerHTML=card('Historial '+days+'d',data.count,'historial');
+$('dash').style.display='grid';
+st.histData=data.items;
+renderTbl(data.items);
+}else{$('tbl').innerHTML='<tr><td colspan="10" class="empty">Sin datos en historial</td></tr>';}
+}catch(e){console.error('Hist error:',e);}
 }
 
-// ========== AUTH v5.2 ==========
+// ========== AUTH ==========
 async function loadUser(){
-  if(!AUTH_TOKEN)return;
-  try{
-    const r=await fetch('/api/auth/me',{headers:{'Authorization':'Bearer '+AUTH_TOKEN}});
-    if(r.ok){
-      const data=await r.json();
-      if(data.success){
-        AUTH_USER=data.user;
-        $('loginBtn').style.display='none';
-        $('logoutBtn').style.display='inline-block';
-        $('userName').textContent=data.user.name;
-        $('userName').style.display='inline';
-        filterProfileDropdown(data.user.allowedProfiles);
-      }
-    }else{logout();}
-  }catch(e){console.error('Error auth:',e);}
+if(!AUTH_TOKEN)return;
+try{
+const r=await fetch('/api/auth/me',{headers:{'Authorization':'Bearer '+AUTH_TOKEN}});
+if(r.ok){
+const data=await r.json();
+if(data.success){
+AUTH_USER=data.user;
+$('loginBtn').style.display='none';
+$('logoutBtn').style.display='inline-block';
+$('userName').textContent=data.user.name;
+$('userName').style.display='inline';
+// Filtrar dropdown
+const allowed=data.user.allowedProfiles||[];
+const sel=$('prof');
+let firstAllowed=null;
+for(let i=0;i<sel.options.length;i++){
+const opt=sel.options[i];
+const val=opt.value;
+if(allowed.includes(val)){opt.disabled=false;if(!firstAllowed)firstAllowed=val;}
+else{opt.disabled=true;}
+}
+// Auto-seleccionar primer perfil permitido
+if(firstAllowed&&(!sel.value||!allowed.includes(sel.value))){
+sel.value=firstAllowed;
+st.pid=firstAllowed;
+}
+}
+}else{logout();}
+}catch(e){console.error('Auth error:',e);}
 }
 
-function filterProfileDropdown(allowed){
-  const sel=$('prof');
-  let firstAllowed = null;
-  for(let i=0;i<sel.options.length;i++){
-    const opt=sel.options[i];
-    const val=opt.value;
-    if(allowed.includes(val)){opt.disabled=false; if(!firstAllowed) firstAllowed=val;}
-    else{opt.disabled=true;}
-  }
-  // Si el perfil actual esta deshabilitado, cambiar al primero permitido
-  if(sel.value && !allowed.includes(sel.value) && firstAllowed){
-    sel.value = firstAllowed;
-    st.pid = firstAllowed;
-  }
-}
-
-function openLogin(){
-  $('loginMod').classList.add('show');
-  $('loginErr').style.display='none';
-}
-function clsLogin(){
-  $('loginMod').classList.remove('show');
-}
+function openLogin(){$('loginMod').classList.add('show');$('loginErr').style.display='none';}
+function clsLogin(){$('loginMod').classList.remove('show');}
 
 async function doLogin(){
-  const email=$('loginEmail').value.trim();
-  const pass=$('loginPass').value;
-  if(!email||!pass){$('loginErr').textContent='Email y password requeridos';$('loginErr').style.display='block';return;}
-  try{
-    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
-    const data=await r.json();
-    if(data.success&&data.token){
-      AUTH_TOKEN=data.token;
-      localStorage.setItem('ap_token',data.token);
-      AUTH_USER=data.user;
-      $('loginBtn').style.display='none';
-      $('logoutBtn').style.display='inline-block';
-      $('userName').textContent=data.user.name;
-      $('userName').style.display='inline';
-      filterProfileDropdown(data.user.allowedProfiles);
-      clsLogin();
-      await runPipe();
-    }else{
-      $('loginErr').textContent=data.error||'Error de login';
-      $('loginErr').style.display='block';
-    }
-  }catch(e){$('loginErr').textContent='Error de conexion';$('loginErr').style.display='block';}
+const email=$('loginEmail').value.trim();
+const pass=$('loginPass').value;
+if(!email||!pass){$('loginErr').textContent='Email y password requeridos';$('loginErr').style.display='block';return;}
+try{
+const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+const data=await r.json();
+if(data.success&&data.token){
+AUTH_TOKEN=data.token;
+localStorage.setItem('ap_token',data.token);
+AUTH_USER=data.user;
+$('loginBtn').style.display='none';
+$('logoutBtn').style.display='inline-block';
+$('userName').textContent=data.user.name;
+$('userName').style.display='inline';
+// Filtrar y auto-seleccionar
+const allowed=data.user.allowedProfiles||[];
+const sel=$('prof');
+let firstAllowed=null;
+for(let i=0;i<sel.options.length;i++){
+const opt=sel.options[i];
+const val=opt.value;
+if(allowed.includes(val)){opt.disabled=false;if(!firstAllowed)firstAllowed=val;}
+else{opt.disabled=true;}
+}
+if(firstAllowed){sel.value=firstAllowed;st.pid=firstAllowed;}
+clsLogin();
+await runPipe();
+}else{
+$('loginErr').textContent=data.error||'Error de login';$('loginErr').style.display='block';
+}
+}catch(e){$('loginErr').textContent='Error de conexion';$('loginErr').style.display='block';}
 }
 
 function logout(){
-  AUTH_TOKEN='';
-  AUTH_USER=null;
-  localStorage.removeItem('ap_token');
-  $('loginBtn').style.display='inline-block';
-  $('logoutBtn').style.display='none';
-  $('userName').style.display='none';
-  const sel=$('prof');
-  for(let i=0;i<sel.options.length;i++){sel.options[i].disabled=false;}
+AUTH_TOKEN='';
+AUTH_USER=null;
+localStorage.removeItem('ap_token');
+$('loginBtn').style.display='inline-block';
+$('logoutBtn').style.display='none';
+$('userName').style.display='none';
+const sel=$('prof');
+for(let i=0;i<sel.options.length;i++){sel.options[i].disabled=false;}
+// Volver a constructora por defecto
+sel.value='constructora';
+st.pid='constructora';
+runPipe();
 }
 
-// ========== EVENT LISTENERS ==========
-document.addEventListener('DOMContentLoaded',function(){
-  $('runBtn').addEventListener('click',runPipe);
-  $('search').addEventListener('input',filterTable);
-  $('prof').addEventListener('change',function(){st.pid=this.value;runPipe();});
-
-  document.getElementById('nav-pipeline').addEventListener('click',function(){setNavTab('pipeline');});
-  document.getElementById('nav-novedades').addEventListener('click',function(){setNavTab('novedades');});
-  document.getElementById('nav-vencer').addEventListener('click',function(){setNavTab('vencer');});
-  document.getElementById('nav-historial').addEventListener('click',function(){setNavTab('historial');});
-
-  document.getElementById('t1').addEventListener('click',function(){setTab(1);});
-  document.getElementById('t2').addEventListener('click',function(){setTab(2);});
-  document.getElementById('t3').addEventListener('click',function(){setTab(3);});
-  document.getElementById('t4').addEventListener('click',function(){setTab(4);});
-
-  $('novBtn').addEventListener('click',loadNovedades);
-  $('vencBtn').addEventListener('click',loadVencer);
-  $('histBtn').addEventListener('click',loadHistorial);
-
-  $('loginBtn').addEventListener('click',openLogin);
-  $('loginClose').addEventListener('click',clsLogin);
-  $('loginSubmit').addEventListener('click',doLogin);
-  $('loginCancel').addEventListener('click',clsLogin);
-  $('logoutBtn').addEventListener('click',logout);
-  $('modClose').addEventListener('click',clsMod);
-  $('modClose2').addEventListener('click',clsMod);
-
-  document.getElementById('loginMod').addEventListener('click',function(e){if(e.target===this)clsLogin();});
-  document.getElementById('mod').addEventListener('click',function(e){if(e.target===this)clsMod();});
-
-  loadUser();
-  runPipe();
-  loadHistorial();
-});
+// ========== INIT ==========
+(async function init(){
+try{
+console.log('DEBUG init v5.2');
+await loadUser();
+if(!AUTH_USER){st.pid='constructora';$('prof').value='constructora';}
+document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe();});
+await runPipe();
+loadHistorial();
+console.log('DEBUG init complete');
+}catch(e){console.error('Init error:',e);}
+})();
 
 function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r')}
