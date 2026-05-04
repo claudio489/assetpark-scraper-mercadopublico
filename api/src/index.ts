@@ -1,6 +1,6 @@
 // ==========================================
-// API v5.0 - AssetPark Scraper MercadoPublico
-// Persistencia historica 30 dias + Novedades + Multi-request
+// API v5.1 - AssetPark Scraper MercadoPublico
+// Persistencia historica 30 dias + Novedades + Multi-request + Decision Engine
 // ==========================================
 
 import express, { Request, Response } from 'express';
@@ -11,19 +11,10 @@ import {
   normalizeOpportunity, analyzeOpportunity, EXECUTORS,
   getBestExecutor, rankOpportunities
 } from './decision';
-import authRoutes from './auth/routes';
-import { authMiddleware, isProfileAllowed } from './auth/middleware';
-import { seedUsersIfEmpty } from './auth/store';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// Seed usuarios por defecto
-seedUsersIfEmpty();
-
-// Auth middleware global (opcional — no bloquea si no hay token)
-app.use(authMiddleware);
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const TICKET = process.env.MP_TICKET || '8BBCAB7E-0911-4E40-BD68-C56A0A33FF78';
@@ -340,8 +331,7 @@ const PORTFOLIO_CATEGORIES = ['Construccion', 'Montaje', 'Mantencion', 'Suminist
 app.get('/api/health', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-store');
   const histKeys = Object.keys(historial);
-  const authInfo = _req.auth ? { user: _req.auth.email, role: _req.auth.role } : null;
-  res.json({ status: 'ok', service: 'assetpark-scraper', version: '5.2.0', historialSize: histKeys.length, decisionEngine: true, auth: authInfo });
+  res.json({ status: 'ok', service: 'assetpark-scraper', version: '5.1.0', historialSize: histKeys.length, decisionEngine: true });
 });
 
 app.get('/api/health/external', async (_req: Request, res: Response) => {
@@ -356,16 +346,9 @@ app.get('/api/health/external', async (_req: Request, res: Response) => {
 });
 
 app.get('/api/profiles', (_req: Request, res: Response) => {
-  let profiles = [...PROFILES];
-  // Si hay usuario autenticado y no es admin, filtrar perfiles permitidos
-  if (_req.auth && _req.auth.role !== 'admin') {
-    profiles = profiles.filter(p => isProfileAllowed(_req, p.id));
-  }
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, profiles });
+  res.json({ success: true, profiles: PROFILES });
 });
-
-app.use('/api/auth', authRoutes);
 
 // ---- PIPELINE ----
 
@@ -373,14 +356,6 @@ let lastResult: any = null;
 
 app.post('/api/opportunities/run', async (req: Request, res: Response) => {
   const { profileId = 'general', limit = 50 } = req.body || {};
-  
-  // Verificar permisos de perfil si hay auth
-  if (req.auth && req.auth.role !== 'admin') {
-    if (!isProfileAllowed(req, profileId)) {
-      res.status(403).json({ success: false, error: 'Perfil no permitido para este usuario' });
-      return;
-    }
-  }
   
   const profile = PROFILES.find(p => p.id === profileId) || PROFILES[4];
   const now = new Date().toISOString();
@@ -729,8 +704,7 @@ if (frontendPath) {
 }
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`AssetPark API v5.2.0 en puerto ${PORT}`);
-  console.log(`Auth: 3 usuarios seedeados (admin@assetpark.cl, dyg@dygconstructora.cl, demo@demo.cl)`);
+  console.log(`AssetPark API v5.1.0 en puerto ${PORT}`);
   console.log(`Decision Engine: ${EXECUTORS.length} ejecutoras configuradas`);
   console.log(`Historial: ${Object.keys(historial).length} licitaciones persistidas`);
 });

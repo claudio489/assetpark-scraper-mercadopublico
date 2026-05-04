@@ -6,12 +6,12 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>AssetPark Licitaciones</title>
+<title>AssetPark Licitaciones v5.1</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
 body{background:linear-gradient(135deg,#0c1923 0%,#0f2235 50%,#0c1923 100%);color:#e2e8f0;min-height:100vh;padding:24px}
 .container{max-width:1400px;margin:0 auto}
-.header{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
 .logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#00d4ff,#0077cc);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;box-shadow:0 4px 15px rgba(0,212,255,.3)}
 h1{font-size:1.6rem;font-weight:700;background:linear-gradient(90deg,#00d4ff,#4facfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
 .subtitle{color:#6b8fa3;font-size:.85rem;margin-bottom:20px}
@@ -28,13 +28,13 @@ select:hover{border-color:rgba(0,212,255,.5)}
 select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,.15)}
 .btn{background:linear-gradient(135deg,#00a8ff,#0066cc);color:#fff;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.9rem;transition:all .2s;box-shadow:0 4px 15px rgba(0,168,255,.3)}
 .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,168,255,.4)}
+.btn:active{transform:translateY(0)}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
-.btn-login{padding:6px 14px;font-size:.75rem;margin-left:8px}
-.btn-logout{padding:6px 14px;font-size:.75rem;margin-left:8px}
 .spinner{display:none;width:18px;height:18px;border:3px solid rgba(0,212,255,.1);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .search-box{background:rgba(15,25,35,.8);border:1px solid rgba(0,212,255,.2);padding:10px 14px;border-radius:8px;color:#e2e8f0;font-size:.9rem;min-width:250px;transition:all .2s}
 .search-box:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,.15)}
+.search-box::placeholder{color:#5a7a8f}
 .dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px}
 .dash-card{background:linear-gradient(145deg,rgba(26,42,58,.8),rgba(20,35,50,.8));padding:16px;border-radius:12px;text-align:center;border:1px solid rgba(255,255,255,.05);transition:all .2s;position:relative;overflow:hidden}
 .dash-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3);border-color:rgba(0,212,255,.2)}
@@ -50,10 +50,16 @@ select:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,2
 .dash-card.novedades::before{background:linear-gradient(90deg,#00d4ff,#ff4757)}
 .dash-card.historial::before{background:linear-gradient(90deg,#a78bfa,#00d4ff)}
 .dash-num{font-size:1.7rem;font-weight:800;margin-top:4px}
-.dash-num.total{color:#00d4ff}.dash-num.alta{color:#ff4757}.dash-num.media{color:#ffa502}
-.dash-num.baja{color:#2ed573}.dash-num.postular{color:#2ed573}.dash-num.evaluar{color:#ffa502}
-.dash-num.evitar{color:#ff4757}.dash-num.monto{color:#a78bfa}
-.dash-num.novedades{color:#ff6b81}.dash-num.historial{color:#a78bfa}
+.dash-num.total{color:#00d4ff}
+.dash-num.alta{color:#ff4757}
+.dash-num.media{color:#ffa502}
+.dash-num.baja{color:#2ed573}
+.dash-num.postular{color:#2ed573}
+.dash-num.evaluar{color:#ffa502}
+.dash-num.evitar{color:#ff4757}
+.dash-num.monto{color:#a78bfa}
+.dash-num.novedades{color:#ff6b81}
+.dash-num.historial{color:#a78bfa}
 .dash-label{font-size:.75rem;color:#6b8fa3;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
 .table-wrap{background:linear-gradient(145deg,rgba(26,42,58,.6),rgba(20,35,50,.6));border-radius:12px;border:1px solid rgba(255,255,255,.05);overflow:hidden;margin-bottom:20px}
 table{width:100%;border-collapse:collapse;font-size:.83rem}
@@ -62,7 +68,9 @@ td{padding:10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:mid
 tr{cursor:pointer;transition:all .15s}
 tr:hover{background:rgba(0,212,255,.06)}
 .score{font-weight:800;font-size:1rem}
-.score-high{color:#ff4757}.score-med{color:#ffa502}.score-low{color:#2ed573}
+.score-high{color:#ff4757}
+.score-med{color:#ffa502}
+.score-low{color:#2ed573}
 .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .badge-POSTULAR{background:rgba(46,213,115,.15);color:#2ed573;border:1px solid rgba(46,213,115,.3)}
 .badge-EVALUAR{background:rgba(255,165,2,.15);color:#ffa502;border:1px solid rgba(255,165,2,.3)}
@@ -71,7 +79,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 .badge-VENCER{background:rgba(255,71,87,.2);color:#ff4757;border:1px solid rgba(255,71,87,.4);margin-left:6px}
 .monto{font-weight:600;color:#c4b5fd}
 .entidad{color:#8ab4c7;font-size:.8rem}
-.codigo{font-family:monospace;font-size:.78rem;color:#5a7a8f;background:rgba(0,0,0,.2);padding:2px 8px;border-radius:4px}
+.codigo{font-family:'SF Mono',monospace;font-size:.78rem;color:#5a7a8f;background:rgba(0,0,0,.2);padding:2px 8px;border-radius:4px}
 .cierre{font-size:.8rem}
 .cierre-urgente{color:#ff4757;font-weight:600}
 .cierre-normal{color:#8ab4c7}
@@ -113,14 +121,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 </head>
 <body>
 <div class="container">
-<div class="header">
-<div class="logo">AP</div>
-<h1>AssetPark Licitaciones</h1>
-<span class="version">v5.2</span>
-<button class="btn btn-login" id="loginBtn" style="margin-left:12px;padding:6px 14px;font-size:.75rem">Login</button>
-<span id="userName" style="color:#00d4ff;font-size:.75rem;margin-left:8px;display:none"></span>
-<button class="btn btn-logout" id="logoutBtn" style="display:none;margin-left:8px;padding:6px 14px;font-size:.75rem">Salir</button>
-</div>
+<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v5.1</span></div>
 <p class="subtitle">Inteligencia de licitaciones publicas — 30 dias de historial + novedades automaticas</p>
 
 <div class="nav-tabs">
@@ -139,7 +140,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 <option value="salud">Salud / Instituciones Publicas</option>
 <option value="imprenta">Imprenta / Publicidad</option>
 <option value="hormigon">Preformado de Hormigon</option>
-<option value="general">General (Todas las Activas)</option>
+<option value="general" selected>General (Todas las Activas)</option>
 <option value="buceo">Buceo / Deportes Acuaticos</option>
 </select></div>
 <button class="btn" id="runBtn" onclick="runPipe()">Ejecutar Pipeline</button>
@@ -218,18 +219,6 @@ tr:hover{background:rgba(0,212,255,.06)}
 </div>
 </div>
 
-<!-- LOGIN MODAL -->
-<div class="modal" id="loginMod" onclick="if(event.target===this)clsLogin()">
-<div class="modal-card" style="max-width:400px">
-<div class="modal-header"><div class="modal-title">Iniciar Sesion</div><button class="modal-close" onclick="clsLogin()">Cerrar</button></div>
-<div class="modal-body">
-<div class="modal-row"><span class="modal-label">Email</span><input id="loginEmail" type="email" class="search-box" style="flex:1" placeholder="admin@assetpark.cl"></div>
-<div class="modal-row"><span class="modal-label">Password</span><input id="loginPass" type="password" class="search-box" style="flex:1" placeholder="Password"></div>
-<div class="modal-row" id="loginErr" style="color:#ff4757;font-size:.85rem;display:none"></div>
-<div class="modal-actions"><button class="modal-btn primary" onclick="doLogin()">Ingresar</button><button class="modal-btn secondary" onclick="clsLogin()">Cancelar</button></div>
-</div></div></div>
-
-<!-- DETAIL MODAL -->
 <div class="modal" id="mod" onclick="if(event.target===this)clsMod()">
 <div class="modal-card">
 <div class="modal-header"><div class="modal-title" id="mt"></div><button class="modal-close" onclick="clsMod()">Cerrar</button></div>
@@ -252,16 +241,12 @@ tr:hover{background:rgba(0,212,255,.06)}
 <script>
 const FMT=new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0});
 const FMTN=new Intl.NumberFormat('es-CL');
-let st={ops:[],filt:[],load:false,pid:'constructora',tab:1,search:''};
-let AUTH_TOKEN=localStorage.getItem('ap_token')||'';
-let AUTH_USER=null;
+let st={ops:[],filt:[],load:false,pid:'general',tab:1,search:''};
 function $(id){return document.getElementById(id)}
 
 function daysLeft(cierre){if(!cierre)return 999;const d=new Date(cierre),n=new Date();return Math.ceil((d-n)/(864e5))}
 function isNew(fecha){if(!fecha)return false;const d=new Date(fecha),n=new Date();return(n-d)<(7*864e5)}
 function isToday(fecha){if(!fecha)return false;const d=new Date(fecha);const n=new Date();return d.toDateString()===n.toDateString()}
-
-function authHeaders(){return AUTH_TOKEN?{'Authorization':'Bearer '+AUTH_TOKEN,'Content-Type':'application/json'}:{'Content-Type':'application/json'};}
 
 function getFiltered(){
 let f=st.ops;
@@ -281,9 +266,8 @@ $('err').classList.remove('show');
 $('succ').classList.remove('show');
 let data=null;
 try{
-const r=await fetch('/api/opportunities/run',{method:'POST',headers:authHeaders(),body:JSON.stringify({profileId:st.pid,limit:50})});
+const r=await fetch('/api/opportunities/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profileId:st.pid,limit:50})});
 if(r.ok)data=await r.json();
-else{console.error('HTTP',r.status);}
 }catch(e){console.error('Error fetch:',e.message);}
 
 if(data&&data.success&&data.opportunities&&data.opportunities.length>0){
@@ -297,8 +281,7 @@ $('badge-hist').textContent=histTotal;
 }else{
 st.ops=[];
 const pname=$('prof').options[$('prof').selectedIndex].text;
-const msg=data&&data.error?data.error:'Sin licitaciones activas para "'+pname+'".';
-$('err').textContent=msg;
+$('err').textContent='Sin licitaciones activas para "'+pname+'". Intenta con otro perfil.';
 $('err').classList.add('show');
 }
 st.filt=getFiltered();
@@ -353,7 +336,7 @@ if(o.firstSeen&&isToday(o.firstSeen))badges+='<span class="badge badge-NEW">HOY<
 else if(isNew(o.firstSeen||o.date))badges+='<span class="badge badge-NEW">NUEVA</span>';
 if(dl<=7&&dl>0)badges+='<span class="badge badge-VENCER">VENCE</span>';
 const url=o.url||'#';
-h+='<tr onclick="openMod(\''+escJS(o.id||'')+'\')">';
+h+='<tr onclick="openMod(''+escJS(o.id||'')+'')">';
 h+='<td><span class="score '+scClass+'">'+sc+'</span></td>';
 h+='<td><strong>'+escHTML(o.title||'')+'</strong>'+badges+'</td>';
 h+='<td><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
@@ -423,7 +406,7 @@ if(tab==='pipeline'){renderDash();renderTbl();}
 async function loadNovedades(){
 $('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando novedades...</td></tr>';
 try{
-const r=await fetch('/api/opportunities/novedades',{headers:authHeaders()});
+const r=await fetch('/api/opportunities/novedades');
 const data=await r.json();
 if(data.success&&data.items){
 $('nov-cnt').textContent=data.count>0?'('+data.count+' nuevas)':'';
@@ -439,7 +422,7 @@ renderTbl(data.items);
 async function loadVencer(){
 $('tbl').innerHTML='<tr><td colspan="10" class="empty">Cargando por vencer...</td></tr>';
 try{
-const r=await fetch('/api/opportunities/vencer',{headers:authHeaders()});
+const r=await fetch('/api/opportunities/vencer');
 const data=await r.json();
 if(data.success&&data.items){
 $('venc-cnt').textContent=data.count>0?'('+data.count+' por vencer)':'';
@@ -461,7 +444,7 @@ const search=$('hist-search').value;
 let url='/api/opportunities/historial?days='+days;
 if(profile!=='all')url+='&profileId='+profile;
 if(search)url+='&search='+encodeURIComponent(search);
-const r=await fetch(url,{headers:authHeaders()});
+const r=await fetch(url);
 const data=await r.json();
 if(data.success&&data.items){
 $('hist-cnt').textContent=data.count>0?'('+data.count+')':'';
@@ -475,106 +458,19 @@ renderTbl(data.items);
 }catch(e){console.error('Hist error:',e);}
 }
 
-// ========== AUTH ==========
-async function loadUser(){
-if(!AUTH_TOKEN)return;
-try{
-const r=await fetch('/api/auth/me',{headers:{'Authorization':'Bearer '+AUTH_TOKEN}});
-if(r.ok){
-const data=await r.json();
-if(data.success){
-AUTH_USER=data.user;
-$('loginBtn').style.display='none';
-$('logoutBtn').style.display='inline-block';
-$('userName').textContent=data.user.name;
-$('userName').style.display='inline';
-// Filtrar dropdown
-const allowed=data.user.allowedProfiles||[];
-const sel=$('prof');
-let firstAllowed=null;
-for(let i=0;i<sel.options.length;i++){
-const opt=sel.options[i];
-const val=opt.value;
-if(allowed.includes(val)){opt.disabled=false;if(!firstAllowed)firstAllowed=val;}
-else{opt.disabled=true;}
-}
-// Auto-seleccionar primer perfil permitido
-if(firstAllowed&&(!sel.value||!allowed.includes(sel.value))){
-sel.value=firstAllowed;
-st.pid=firstAllowed;
-}
-}
-}else{logout();}
-}catch(e){console.error('Auth error:',e);}
-}
+function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\'").replace(/"/g,'\"').replace(/
+/g,'\n').replace(//g,'\r')}
+function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 
-function openLogin(){$('loginMod').classList.add('show');$('loginErr').style.display='none';}
-function clsLogin(){$('loginMod').classList.remove('show');}
-
-async function doLogin(){
-const email=$('loginEmail').value.trim();
-const pass=$('loginPass').value;
-if(!email||!pass){$('loginErr').textContent='Email y password requeridos';$('loginErr').style.display='block';return;}
-try{
-const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
-const data=await r.json();
-if(data.success&&data.token){
-AUTH_TOKEN=data.token;
-localStorage.setItem('ap_token',data.token);
-AUTH_USER=data.user;
-$('loginBtn').style.display='none';
-$('logoutBtn').style.display='inline-block';
-$('userName').textContent=data.user.name;
-$('userName').style.display='inline';
-// Filtrar y auto-seleccionar
-const allowed=data.user.allowedProfiles||[];
-const sel=$('prof');
-let firstAllowed=null;
-for(let i=0;i<sel.options.length;i++){
-const opt=sel.options[i];
-const val=opt.value;
-if(allowed.includes(val)){opt.disabled=false;if(!firstAllowed)firstAllowed=val;}
-else{opt.disabled=true;}
-}
-if(firstAllowed){sel.value=firstAllowed;st.pid=firstAllowed;}
-clsLogin();
-await runPipe();
-}else{
-$('loginErr').textContent=data.error||'Error de login';$('loginErr').style.display='block';
-}
-}catch(e){$('loginErr').textContent='Error de conexion';$('loginErr').style.display='block';}
-}
-
-function logout(){
-AUTH_TOKEN='';
-AUTH_USER=null;
-localStorage.removeItem('ap_token');
-$('loginBtn').style.display='inline-block';
-$('logoutBtn').style.display='none';
-$('userName').style.display='none';
-const sel=$('prof');
-for(let i=0;i<sel.options.length;i++){sel.options[i].disabled=false;}
-// Volver a constructora por defecto
-sel.value='constructora';
-st.pid='constructora';
-runPipe();
-}
-
-// ========== INIT ==========
 (async function init(){
 try{
-console.log('DEBUG init v5.2');
-await loadUser();
-if(!AUTH_USER){st.pid='constructora';$('prof').value='constructora';}
+console.log('DEBUG init v5.1');
 document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe();});
 await runPipe();
 loadHistorial();
 console.log('DEBUG init complete');
 }catch(e){console.error('Init error:',e);}
 })();
-
-function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r')}
-function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 </script>
 </body></html>
