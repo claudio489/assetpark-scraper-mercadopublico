@@ -7,6 +7,8 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import {
   normalizeOpportunity, analyzeOpportunity, EXECUTORS,
   getBestExecutor, rankOpportunities
@@ -22,6 +24,37 @@ const MP_API = 'https://api.mercadopublico.cl/servicios/v1/publico';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const HIST_FILE = path.join(DATA_DIR, 'historial.json');
 const MAX_HIST_DAYS = 30;
+
+// ---- AUTH CONFIG ----
+const JWT_SECRET = process.env.JWT_SECRET || 'assetpark-dev-secret-2024';
+const JWT_EXPIRES = '24h';
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+
+interface User {
+  id: string;
+  email: string;
+  password: string;
+  profile: string;
+  name: string;
+}
+
+function loadUsers(): User[] {
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+    }
+  } catch (e) { console.error('[AUTH] Error cargando users:', (e as Error).message); }
+  return [];
+}
+
+// Extender Request para user logueado
+declare global {
+  namespace Express {
+    interface Request {
+      user?: { id: string; email: string; profile: string; name: string };
+    }
+  }
+}
 
 // Asegurar directorio de datos existe
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -352,14 +385,68 @@ app.get('/api/profiles', (_req: Request, res: Response) => {
   res.json({ success: true, profiles: PROFILES });
 });
 
+// ---- AUTH MIDDLEWARE (soft mode) ----
+function authMiddleware(req: Request, res: Response, next: Function) {
+  try {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    if (!authHeader) return next();
+    const token = (authHeader as string).replace(/^Bearer\s+/i, '');
+    if (!token) return next();
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    if (decoded && decoded.id) {
+      req.user = { id: decoded.id, email: decoded.email, profile: decoded.profile, name: decoded.name };
+    }
+  } catch (e) { /* token invalido = anonimo */ }
+  next();
+}
+app.use(authMiddleware);
+
+// ---- AUTH ENDPOINTS ----
+
+app.post('/api/auth/login', (req: Request, res: Response) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    res.status(400).json({ success: false, error: 'Falta email o password' });
+    return;
+  }
+  const users = loadUsers();
+  const user = users.find((u: User) => u.email === email);
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    res.status(401).json({ success: false, error: 'Credenciales invalidas' });
+    return;
+  }
+  const token = jwt.sign(
+    { id: user.id, email: user.email, profile: user.profile, name: user.name },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES }
+  );
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, token, profile: user.profile, name: user.name });
+});
+
+app.post('/api/auth/logout', (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, message: 'Logout OK - elimina el token en el cliente' });
+});
+
+app.get('/api/auth/me', (req: Request, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({ success: false, error: 'No autenticado' });
+    return;
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, user: req.user });
+});
+
 // ---- PIPELINE ----
 
 let lastResult: any = null;
 
 app.post('/api/opportunities/run', async (req: Request, res: Response) => {
-  const { profileId = 'general', limit = 50 } = req.body || {};
+  const effectiveProfileId = req.user ? req.user.profile : (req.body?.profileId || 'general');
+  const { limit = 50 } = req.body || {};
   
-  const profile = PROFILES.find(p => p.id === profileId) || PROFILES[4];
+  const profile = PROFILES.find(p => p.id === effectiveProfileId) || PROFILES[4];
   const now = new Date().toISOString();
 
   console.log(`[API] Pipeline v5 - perfil: ${profile.id}, limit: ${limit}`);
@@ -384,7 +471,7 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
       else if (finalScore >= 35) recommendation = 'EVALUAR';
       else recommendation = 'REVISION'; // antes era EVITAR - ahora es "revisar con cuidado"
       // Perfil General: todo EVALUAR para que el usuario decida manualmente
-      if (profileId === 'general') recommendation = 'EVALUAR';
+      if (effectiveProfileId === 'general') recommendation = 'EVALUAR';
 
       const scored = {
         ...op,
@@ -401,7 +488,7 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
 
       // Agregar analisis Decision Engine (solo si hay ejecutoras configuradas)
       try {
-        const normalized = normalizeOpportunity({ ...scored, profileId });
+        const normalized = normalizeOpportunity({ ...scored, profileId: effectiveProfileId });
         const decision = analyzeOpportunity(normalized, EXECUTORS);
         scored.v5 = {
           decisionValue: decision.decisionValue,
@@ -425,13 +512,13 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
           ...scored,
           firstSeen: now,
           lastSeen: now,
-          profiles: [profileId]
+          profiles: [effectiveProfileId]
         };
       } else {
         existing.lastSeen = now;
         existing.status = op.status;
         existing.closingDate = op.closingDate;
-        if (!existing.profiles.includes(profileId)) existing.profiles.push(profileId);
+        if (!existing.profiles.includes(effectiveProfileId)) existing.profiles.push(effectiveProfileId);
       }
 
       return scored;
@@ -455,7 +542,7 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
       historialTotal: Object.keys(historial).length
     };
 
-    lastResult = { profileId, runAt: now, stats, opportunities };
+    lastResult = { profileId: effectiveProfileId, runAt: now, stats, opportunities };
 
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities });

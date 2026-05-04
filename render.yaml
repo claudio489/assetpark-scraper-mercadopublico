@@ -6,7 +6,7 @@ services:
     region: oregon
     buildCommand: |
       set -e
-      echo "=== AssetPark Scraper v5.0 Build ==="
+      echo "=== AssetPark Scraper v5.2 + Auth Build ==="
       echo "=== Instalando Engine ==="
       cd engine && npm install && cd ..
       echo "=== Compilando Engine ==="
@@ -30,6 +30,8 @@ services:
         value: production
       - key: MP_TICKET
         value: 8BBCAB7E-0911-4E40-BD68-C56A0A33FF78
+      - key: JWT_SECRET
+        generateValue: true
       - key: PORT
         value: 10000
     healthCheckPath: /api/health

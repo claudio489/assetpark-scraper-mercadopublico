@@ -81,6 +81,20 @@ tr:hover{background:rgba(0,212,255,.06)}
 #landingWrap .land-pcard h5{color:#00d4ff;font-size:.85rem;margin-bottom:4px}
 #landingWrap .land-pcard span{color:#6b8fa3;font-size:.7rem}
 #appWrap{display:none}
+#loginModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:3000;justify-content:center;align-items:center;padding:20px;backdrop-filter:blur(5px)}
+#loginModal.show{display:flex}
+.login-card{background:linear-gradient(145deg,#1a2a3a,#152030);padding:32px;border-radius:16px;max-width:400px;width:100%;border:1px solid rgba(0,212,255,.15);box-shadow:0 25px 60px rgba(0,0,0,.5);text-align:center}
+.login-card h3{color:#00d4ff;font-size:1.4rem;font-weight:700;margin-bottom:6px}
+.login-card p{color:#6b8fa3;font-size:.85rem;margin-bottom:20px}
+.login-input{width:100%;background:rgba(15,25,35,.8);border:1px solid rgba(0,212,255,.2);padding:12px 14px;border-radius:8px;color:#e2e8f0;font-size:.9rem;margin-bottom:12px;transition:all .2s}
+.login-input:focus{outline:none;border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,.15)}
+.login-btn{width:100%;background:linear-gradient(135deg,#00a8ff,#0066cc);color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:1rem;transition:all .2s;box-shadow:0 4px 15px rgba(0,168,255,.3);margin-top:4px}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,168,255,.4)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.login-err{color:#ff6b7a;font-size:.8rem;margin-top:8px;min-height:20px}
+.logout-btn{background:rgba(255,71,87,.15);color:#ff4757;border:1px solid rgba(255,71,87,.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.75rem;transition:all .2s;margin-left:auto}
+.logout-btn:hover{background:rgba(255,71,87,.25)}
+.user-badge{background:rgba(46,213,115,.15);color:#2ed573;border:1px solid rgba(46,213,115,.3);padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:700;margin-left:8px}
 .badge-NEW{background:rgba(0,212,255,.15);color:#00d4ff;border:1px solid rgba(0,212,255,.3);margin-left:6px}
 .badge-VENCER{background:rgba(255,71,87,.2);color:#ff4757;border:1px solid rgba(255,71,87,.4);margin-left:6px}
 .monto{font-weight:600;color:#c4b5fd}
@@ -173,9 +187,20 @@ tr:hover{background:rgba(0,212,255,.06)}
 </div>
 </div>
 
+<div id="loginModal" onclick="if(event.target===this)closeLogin()">
+<div class="login-card">
+<h3>&#128274; Acceso Requerido</h3>
+<p id="loginText">Ingresa tus credenciales para acceder a este perfil</p>
+<input type="email" class="login-input" id="loginEmail" placeholder="Email" value="">
+<input type="password" class="login-input" id="loginPass" placeholder="Password" value="">
+<div class="login-err" id="loginErr"></div>
+<button class="login-btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
+</div>
+</div>
+
 <div id="appWrap">
 <div class="container">
-<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v5.1 + Landing</span></div>
+<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v5.2 + Auth</span><span class="user-badge" id="userBadge" style="display:none"></span><button class="logout-btn" id="logoutBtn" style="display:none" onclick="doLogout()">Cerrar Sesion</button></div>
 <p class="subtitle">Inteligencia de licitaciones publicas — 30 dias de historial + novedades automaticas</p>
 
 <div class="nav-tabs">
@@ -305,6 +330,9 @@ const perfilValido=['constructora','tecnologia','salud','imprenta','hormigon','p
 const perfilInicial=perfilFromUrl&&perfilValido.includes(perfilFromUrl)?perfilFromUrl:'general';
 
 let st={ops:[],filt:[],load:false,pid:perfilInicial,tab:1,search:''};
+const AUTH_PROFILES=['general','constructora'];
+let authToken=localStorage.getItem('ap_token')||'';
+let authUser=null;
 function $(id){return document.getElementById(id)}
 function daysLeft(cierre){if(!cierre)return 999;const d=new Date(cierre),n=new Date();return Math.ceil((d-n)/(864e5))}
 function isNew(fecha){if(!fecha)return false;const d=new Date(fecha),n=new Date();return(n-d)<(7*864e5)}
@@ -318,7 +346,9 @@ $('runBtn').disabled=true;$('spin').style.display='inline-block';
 $('err').classList.remove('show');$('succ').classList.remove('show');
 let data=null;
 try{
-const r=await fetch('/api/opportunities/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({profileId:st.pid,limit:50})});
+const headers={'Content-Type':'application/json'};
+if(authToken)headers['Authorization']='Bearer '+authToken;
+const r=await fetch('/api/opportunities/run',{method:'POST',headers,body:JSON.stringify({profileId:st.pid,limit:50})});
 if(r.ok)data=await r.json();
 }catch(e){console.error('Error fetch:',e.message);}
 
@@ -496,28 +526,121 @@ if(perfil&&perfilValido.includes(perfil)){
 st.pid=perfil;
 document.getElementById('prof').value=perfil;
 }
+const needsAuth=AUTH_PROFILES.includes(st.pid);
+if(needsAuth&&!authToken){openLogin(st.pid);return;}
 $('landingWrap').style.display='none';
 $('appWrap').style.display='block';
 document.title=st.pid==='general'?'AssetPark Licitaciones — Admin':'AssetPark Licitaciones — '+st.pid;
+updateAuthUI();
 runPipe();
+}
+function openLogin(perfil){
+st._loginPending=perfil;
+const names={general:'AssetPark Admin',constructora:'DYG Constructora'};
+$('loginText').textContent='Acceso a '+names[perfil]+' - Ingresa tus credenciales';
+$('loginErr').textContent='';
+$('loginEmail').value='';
+$('loginPass').value='';
+$('loginModal').classList.add('show');
+}
+function closeLogin(){$('loginModal').classList.remove('show');st._loginPending=null;}
+async function doLogin(){
+const email=$('loginEmail').value.trim();
+const pass=$('loginPass').value;
+if(!email||!pass){$('loginErr').textContent='Ingresa email y password';return;}
+$('loginBtn').disabled=true;
+try{
+const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+const data=await r.json();
+if(data.success&&data.token){
+authToken=data.token;
+authUser={name:data.name,profile:data.profile};
+localStorage.setItem('ap_token',authToken);
+closeLogin();
+$('landingWrap').style.display='none';
+$('appWrap').style.display='block';
+st.pid=data.profile;
+document.getElementById('prof').value=data.profile;
+document.title='AssetPark Licitaciones — '+(data.name||data.profile);
+updateAuthUI();
+runPipe();
+}else{
+$('loginErr').textContent=data.error||'Credenciales invalidas';
+}
+}catch(e){$('loginErr').textContent='Error de conexion';}
+$('loginBtn').disabled=false;
+}
+function doLogout(){
+authToken='';
+authUser=null;
+localStorage.removeItem('ap_token');
+st.pid='general';
+updateAuthUI();
+window.location.reload();
+}
+function updateAuthUI(){
+if(authToken&&authUser){
+$('userBadge').textContent=authUser.name||authUser.profile;
+$('userBadge').style.display='inline-block';
+$('logoutBtn').style.display='inline-block';
+}else{
+$('userBadge').style.display='none';
+$('logoutBtn').style.display='none';
+}
 }
 
 function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r')}
 function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 
+function authHeaders(base){
+const h=base||{};
+if(authToken)h['Authorization']='Bearer '+authToken;
+return h;
+}
+
 (async function init(){
 try{
-console.log('DEBUG init v5.1 + landing + perfiles URL');
+console.log('DEBUG init v5.2 + auth + landing');
 document.getElementById('prof').value=st.pid;
 document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe();});
+// Si hay token guardado, validar con el servidor
+if(authToken){
+try{
+const r=await fetch('/api/auth/me',{headers:authHeaders()});
+const d=await r.json();
+if(d.success&&d.user){
+authUser={name:d.user.name,profile:d.user.profile};
+console.log('DEBUG token valido, usuario:',d.user.email);
+}else{
+authToken='';authUser=null;localStorage.removeItem('ap_token');
+}
+}catch(e){authToken='';authUser=null;localStorage.removeItem('ap_token');}
+}
+// Perfil por URL
 if(perfilFromUrl&&perfilValido.includes(perfilFromUrl)){
-console.log('DEBUG perfil URL, skip landing:',perfilFromUrl);
+const needsAuth=AUTH_PROFILES.includes(perfilFromUrl);
+if(needsAuth&&!authToken){openLogin(perfilFromUrl);return;}
 $('landingWrap').style.display='none';
 $('appWrap').style.display='block';
 document.title='AssetPark Licitaciones — '+perfilFromUrl;
+updateAuthUI();
+await runPipe();loadHistorial();
+return;
+}
+// Si hay token valido sin URL param, ir directo al perfil del usuario
+if(authToken&&authUser){
+st.pid=authUser.profile;
+document.getElementById('prof').value=st.pid;
+$('landingWrap').style.display='none';
+$('appWrap').style.display='block';
+document.title='AssetPark Licitaciones — '+(authUser.name||st.pid);
+updateAuthUI();
 await runPipe();loadHistorial();
 }
+// Enter en login inputs
+$('loginPass').addEventListener('keypress',e=>{if(e.key==='Enter')doLogin()});
+$('loginEmail').addEventListener('keypress',e=>{if(e.key==='Enter')$('loginPass').focus()});
 console.log('DEBUG init complete, perfil:',st.pid);
 }catch(e){console.error('Init error:',e);}
 })();

@@ -11,6 +11,8 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const decision_1 = require("./decision");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
@@ -21,6 +23,21 @@ const MP_API = 'https://api.mercadopublico.cl/servicios/v1/publico';
 const DATA_DIR = path_1.default.join(process.cwd(), 'data');
 const HIST_FILE = path_1.default.join(DATA_DIR, 'historial.json');
 const MAX_HIST_DAYS = 30;
+// ---- AUTH CONFIG ----
+const JWT_SECRET = process.env.JWT_SECRET || 'assetpark-dev-secret-2024';
+const JWT_EXPIRES = '24h';
+const USERS_FILE = path_1.default.join(DATA_DIR, 'users.json');
+function loadUsers() {
+    try {
+        if (fs_1.default.existsSync(USERS_FILE)) {
+            return JSON.parse(fs_1.default.readFileSync(USERS_FILE, 'utf-8'));
+        }
+    }
+    catch (e) {
+        console.error('[AUTH] Error cargando users:', e.message);
+    }
+    return [];
+}
 // Asegurar directorio de datos existe
 if (!fs_1.default.existsSync(DATA_DIR))
     fs_1.default.mkdirSync(DATA_DIR, { recursive: true });
@@ -313,11 +330,59 @@ app.get('/api/profiles', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, profiles: PROFILES });
 });
+// ---- AUTH MIDDLEWARE (soft mode) ----
+function authMiddleware(req, res, next) {
+    try {
+        const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+        if (!authHeader)
+            return next();
+        const token = authHeader.replace(/^Bearer\s+/i, '');
+        if (!token)
+            return next();
+        const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
+        if (decoded && decoded.id) {
+            req.user = { id: decoded.id, email: decoded.email, profile: decoded.profile, name: decoded.name };
+        }
+    }
+    catch (e) { /* token invalido = anonimo */ }
+    next();
+}
+app.use(authMiddleware);
+// ---- AUTH ENDPOINTS ----
+app.post('/api/auth/login', (req, res) => {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+        res.status(400).json({ success: false, error: 'Falta email o password' });
+        return;
+    }
+    const users = loadUsers();
+    const user = users.find((u) => u.email === email);
+    if (!user || !bcryptjs_1.default.compareSync(password, user.password)) {
+        res.status(401).json({ success: false, error: 'Credenciales invalidas' });
+        return;
+    }
+    const token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email, profile: user.profile, name: user.name }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, token, profile: user.profile, name: user.name });
+});
+app.post('/api/auth/logout', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, message: 'Logout OK - elimina el token en el cliente' });
+});
+app.get('/api/auth/me', (req, res) => {
+    if (!req.user) {
+        res.status(401).json({ success: false, error: 'No autenticado' });
+        return;
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, user: req.user });
+});
 // ---- PIPELINE ----
 let lastResult = null;
 app.post('/api/opportunities/run', async (req, res) => {
-    const { profileId = 'general', limit = 50 } = req.body || {};
-    const profile = PROFILES.find(p => p.id === profileId) || PROFILES[4];
+    const effectiveProfileId = req.user ? req.user.profile : (req.body?.profileId || 'general');
+    const { limit = 50 } = req.body || {};
+    const profile = PROFILES.find(p => p.id === effectiveProfileId) || PROFILES[4];
     const now = new Date().toISOString();
     console.log(`[API] Pipeline v5 - perfil: ${profile.id}, limit: ${limit}`);
     try {
@@ -341,7 +406,7 @@ app.post('/api/opportunities/run', async (req, res) => {
             else
                 recommendation = 'REVISION'; // antes era EVITAR - ahora es "revisar con cuidado"
             // Perfil General: todo EVALUAR para que el usuario decida manualmente
-            if (profileId === 'general')
+            if (effectiveProfileId === 'general')
                 recommendation = 'EVALUAR';
             const scored = {
                 ...op,
@@ -357,7 +422,7 @@ app.post('/api/opportunities/run', async (req, res) => {
             };
             // Agregar analisis Decision Engine (solo si hay ejecutoras configuradas)
             try {
-                const normalized = (0, decision_1.normalizeOpportunity)({ ...scored, profileId });
+                const normalized = (0, decision_1.normalizeOpportunity)({ ...scored, profileId: effectiveProfileId });
                 const decision = (0, decision_1.analyzeOpportunity)(normalized, decision_1.EXECUTORS);
                 scored.v5 = {
                     decisionValue: decision.decisionValue,
@@ -381,15 +446,15 @@ app.post('/api/opportunities/run', async (req, res) => {
                     ...scored,
                     firstSeen: now,
                     lastSeen: now,
-                    profiles: [profileId]
+                    profiles: [effectiveProfileId]
                 };
             }
             else {
                 existing.lastSeen = now;
                 existing.status = op.status;
                 existing.closingDate = op.closingDate;
-                if (!existing.profiles.includes(profileId))
-                    existing.profiles.push(profileId);
+                if (!existing.profiles.includes(effectiveProfileId))
+                    existing.profiles.push(effectiveProfileId);
             }
             return scored;
         });
@@ -408,7 +473,7 @@ app.post('/api/opportunities/run', async (req, res) => {
             novedades: novedades.length,
             historialTotal: Object.keys(historial).length
         };
-        lastResult = { profileId, runAt: now, stats, opportunities };
+        lastResult = { profileId: effectiveProfileId, runAt: now, stats, opportunities };
         res.setHeader('Cache-Control', 'no-store');
         res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities });
         console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades, ${novedades.length} novedades, ${stats.historialTotal} en historial`);
