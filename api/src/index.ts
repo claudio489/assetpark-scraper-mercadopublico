@@ -697,20 +697,10 @@ if (frontendPath) {
       }
     }
   }));
-  // Landing page en raiz
-  app.get('/', (_req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.sendFile(path.join(frontendPath, 'landing.html'));
-  });
-  // App en /app (soporta ?perfil=constructora etc)
-  app.get('/app', (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
-  // Catch-all para rutas no API -> landing
+  // Todas las rutas sirven index.html (landing + app en un solo archivo)
   app.get('*', (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    res.sendFile(path.join(frontendPath, 'landing.html'));
+    res.sendFile(path.join(frontendPath, 'index.html'));
   });
   console.log(`[STATIC] Frontend: ${frontendPath}`);
 } else {

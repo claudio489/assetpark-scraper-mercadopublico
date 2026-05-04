@@ -66,6 +66,21 @@ tr:hover{background:rgba(0,212,255,.06)}
 .badge-EVALUAR{background:rgba(255,165,2,.15);color:#ffa502;border:1px solid rgba(255,165,2,.3)}
 .badge-EVITAR{background:rgba(255,71,87,.15);color:#ff4757;border:1px solid rgba(255,71,87,.3)}
 .badge-REVISION{background:rgba(148,163,184,.15);color:#94a3b8;border:1px solid rgba(148,163,184,.3)}
+/* LANDING OVERLAY */
+#landingWrap{position:fixed;inset:0;background:linear-gradient(135deg,#0c1923 0%,#0f2235 50%,#0a1520 100%);z-index:2000;overflow:auto;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px 20px}
+#landingWrap .land-logo{width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#00d4ff,#0077cc);display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:#fff;margin-bottom:30px;box-shadow:0 10px 40px rgba(0,212,255,.3)}
+#landingWrap h2{font-size:2.5rem;font-weight:800;background:linear-gradient(90deg,#00d4ff,#4facfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
+#landingWrap p{color:#6b8fa3;font-size:1.1rem;max-width:500px;margin-bottom:30px}
+#landingWrap .land-cta{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+#landingWrap .land-btn{background:linear-gradient(135deg,#00a8ff,#0066cc);color:#fff;border:none;padding:16px 32px;border-radius:12px;cursor:pointer;font-weight:700;font-size:1rem;transition:all .3s;box-shadow:0 8px 30px rgba(0,168,255,.35);text-decoration:none}
+#landingWrap .land-btn:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,168,255,.5)}
+#landingWrap .land-profiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;max-width:800px;width:100%;margin-top:30px}
+#landingWrap .land-pcard{background:rgba(26,42,58,.6);padding:16px;border-radius:12px;border:1px solid rgba(0,212,255,.1);text-align:center;cursor:pointer;transition:all .2s;text-decoration:none;color:#e2e8f0;display:block}
+#landingWrap .land-pcard:hover{border-color:rgba(0,212,255,.3);background:rgba(26,42,58,.9);transform:translateY(-3px)}
+#landingWrap .land-picon{font-size:1.8rem;margin-bottom:8px}
+#landingWrap .land-pcard h5{color:#00d4ff;font-size:.85rem;margin-bottom:4px}
+#landingWrap .land-pcard span{color:#6b8fa3;font-size:.7rem}
+#appWrap{display:none}
 .badge-NEW{background:rgba(0,212,255,.15);color:#00d4ff;border:1px solid rgba(0,212,255,.3);margin-left:6px}
 .badge-VENCER{background:rgba(255,71,87,.2);color:#ff4757;border:1px solid rgba(255,71,87,.4);margin-left:6px}
 .monto{font-weight:600;color:#c4b5fd}
@@ -111,8 +126,56 @@ tr:hover{background:rgba(0,212,255,.06)}
 </style>
 </head>
 <body>
+
+<div id="landingWrap">
+<div class="land-logo">AP</div>
+<h2>AssetPark Licitaciones</h2>
+<p>Inteligencia de licitaciones publicas de Chile. Analizamos MercadoPublico.cl para encontrar las mejores oportunidades de negocio para tu empresa.</p>
+<div class="land-cta">
+<a class="land-btn" onclick="showApp('general')">Acceso AssetPark Admin</a>
+</div>
+<div class="land-profiles">
+<a class="land-pcard" onclick="showApp('constructora')">
+<div class="land-picon">&#128119;</div>
+<h5>Constructora</h5>
+<span>Obras Civiles</span>
+</a>
+<a class="land-pcard" onclick="showApp('tecnologia')">
+<div class="land-picon">&#128187;</div>
+<h5>Tecnologia</h5>
+<span>Infraestructura IT</span>
+</a>
+<a class="land-pcard" onclick="showApp('salud')">
+<div class="land-picon">&#127973;</div>
+<h5>Salud</h5>
+<span>Instituciones Publicas</span>
+</a>
+<a class="land-pcard" onclick="showApp('imprenta')">
+<div class="land-picon">&#128240;</div>
+<h5>Imprenta</h5>
+<span>Publicidad</span>
+</a>
+<a class="land-pcard" onclick="showApp('hormigon')">
+<div class="land-picon">&#127959;</div>
+<h5>Preformado</h5>
+<span>Hormigon</span>
+</a>
+<a class="land-pcard" onclick="showApp('pallets')">
+<div class="land-picon">&#128230;</div>
+<h5>Pallets</h5>
+<span>Logistica y Almacenaje</span>
+</a>
+<a class="land-pcard" onclick="showApp('buceo')">
+<div class="land-picon">&#127946;</div>
+<h5>Buceo</h5>
+<span>Deportes Acuaticos</span>
+</a>
+</div>
+</div>
+
+<div id="appWrap">
 <div class="container">
-<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v5.1</span></div>
+<div class="header"><div class="logo">AP</div><h1>AssetPark Licitaciones</h1><span class="version">v5.1 + Landing</span></div>
 <p class="subtitle">Inteligencia de licitaciones publicas — 30 dias de historial + novedades automaticas</p>
 
 <div class="nav-tabs">
@@ -210,6 +273,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 </tr></thead>
 <tbody id="tbl"></tbody>
 </table>
+</div>
 </div>
 </div>
 
@@ -427,6 +491,17 @@ $('dash').style.display='grid';st.histData=data.items;renderTbl(data.items);
 }catch(e){console.error('Hist error:',e);}
 }
 
+function showApp(perfil){
+if(perfil&&perfilValido.includes(perfil)){
+st.pid=perfil;
+document.getElementById('prof').value=perfil;
+}
+$('landingWrap').style.display='none';
+$('appWrap').style.display='block';
+document.title=st.pid==='general'?'AssetPark Licitaciones — Admin':'AssetPark Licitaciones — '+st.pid;
+runPipe();
+}
+
 function escHTML(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r')}
 function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
@@ -434,10 +509,15 @@ function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 (async function init(){
 try{
 console.log('DEBUG init v5.1 + landing + perfiles URL');
-// Setear el select al perfil de la URL (ej: ?perfil=constructora)
 document.getElementById('prof').value=st.pid;
 document.getElementById('prof').addEventListener('change',e=>{st.pid=e.target.value;runPipe();});
+if(perfilFromUrl&&perfilValido.includes(perfilFromUrl)){
+console.log('DEBUG perfil URL, skip landing:',perfilFromUrl);
+$('landingWrap').style.display='none';
+$('appWrap').style.display='block';
+document.title='AssetPark Licitaciones — '+perfilFromUrl;
 await runPipe();loadHistorial();
+}
 console.log('DEBUG init complete, perfil:',st.pid);
 }catch(e){console.error('Init error:',e);}
 })();
