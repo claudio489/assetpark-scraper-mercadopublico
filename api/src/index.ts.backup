@@ -443,7 +443,7 @@ app.get('/api/auth/me', (req: Request, res: Response) => {
 let lastResult: any = null;
 
 app.post('/api/opportunities/run', async (req: Request, res: Response) => {
-  const effectiveProfileId = req.user ? (req.user.profile === 'general' ? (req.body?.profileId || 'general') : req.user.profile) : (req.body?.profileId || 'general');
+  const effectiveProfileId = req.user ? req.user.profile : (req.body?.profileId || 'general');
   const { limit = 50 } = req.body || {};
   
   const profile = PROFILES.find(p => p.id === effectiveProfileId) || PROFILES[4];
