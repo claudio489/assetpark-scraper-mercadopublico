@@ -22,7 +22,21 @@ export async function runPipeline(config: PipelineConfig): Promise<PipelineResul
   const normalized = normalizeOpportunities(raw);
   
   // 3. SCORE
-  const scored = scoreOpportunities(normalized, profile);
+  let scored = scoreOpportunities(normalized, profile);
+  
+  // 3.5 FILTROS AVANZADOS (region + monto del perfil)
+  if (profile.regions && profile.regions.length > 0) {
+    const before = scored.length;
+    scored = scored.filter(o => profile.regions!.some(r => o.region.toLowerCase().includes(r.toLowerCase())));
+    console.log(`[PIPELINE] Filtro region: ${before} → ${scored.length} (${profile.regions.join(', ')})`);
+  }
+  if (profile.minAmount || profile.maxAmount) {
+    const before = scored.length;
+    const min = profile.minAmount || 0;
+    const max = profile.maxAmount || Infinity;
+    scored = scored.filter(o => o.amount >= min && o.amount <= max);
+    console.log(`[PIPELINE] Filtro monto ${min}-${max}: ${before} → ${scored.length}`);
+  }
   
   // 4. OUTPUT
   const opportunities = scored.sort((a, b) => b.score - a.score);

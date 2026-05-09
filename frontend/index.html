@@ -66,6 +66,15 @@ tr:hover{background:rgba(0,212,255,.06)}
 .badge-EVALUAR{background:rgba(255,165,2,.15);color:#ffa502;border:1px solid rgba(255,165,2,.3)}
 .badge-EVITAR{background:rgba(255,71,87,.15);color:#ff4757;border:1px solid rgba(255,71,87,.3)}
 .badge-REVISION{background:rgba(148,163,184,.15);color:#94a3b8;border:1px solid rgba(148,163,184,.3)}
+.btn-action{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#6b8fa3;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:13px;line-height:1;transition:all .15s;margin-right:3px}
+.btn-action:hover{background:rgba(255,255,255,.12);color:#e2e8f0}
+.btn-save{color:#ffd700;border-color:rgba(255,215,0,.2)}
+.btn-save:hover{background:rgba(255,215,0,.15)}
+.btn-save.saved{color:#ffd700;background:rgba(255,215,0,.2)}
+.btn-hide{color:#ff6b7a;border-color:rgba(255,107,122,.2)}
+.btn-hide:hover{background:rgba(255,107,122,.15);color:#ff4757}
+.btn-na{color:#ff4757;border-color:rgba(255,71,87,.3);font-size:11px;font-weight:700;padding:3px 8px}
+.btn-na:hover{background:rgba(255,71,87,.15);color:#ff6b7a}
 /* LANDING OVERLAY */
 #landingWrap{position:fixed;inset:0;background:linear-gradient(135deg,#0c1923 0%,#0f2235 50%,#0a1520 100%);z-index:2000;overflow:auto;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px 20px}
 #landingWrap .land-logo{width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#00d4ff,#0077cc);display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:#fff;margin-bottom:30px;box-shadow:0 10px 40px rgba(0,212,255,.3)}
@@ -208,6 +217,7 @@ tr:hover{background:rgba(0,212,255,.06)}
 <button class="nav-tab" onclick="setNavTab('novedades')" id="nav-novedades">Novedades</button>
 <button class="nav-tab" onclick="setNavTab('vencer')" id="nav-vencer">Por Vencer</button>
 <button class="nav-tab" onclick="setNavTab('historial')" id="nav-historial">Historial</button>
+<button class="nav-tab" onclick="setNavTab('guardadas')" id="nav-guardadas">&#9733; Guardadas</button>
 </div>
 
 <div id="view-pipeline">
@@ -284,6 +294,14 @@ tr:hover{background:rgba(0,212,255,.06)}
 <button class="btn" onclick="loadHistorial()">Actualizar</button>
 <span id="hist-cnt" style="color:#a78bfa;font-weight:700"></span>
 </div>
+</div>
+
+<div id="view-guardadas" style="display:none">
+<div class="controls">
+<div class="ctrl-group"><label>Mis licitaciones guardadas</label></div>
+<button class="btn" onclick="loadSaved()">Actualizar</button>
+</div>
+<div id="saved-panel" style="margin-top:12px"></div>
 </div>
 
 <div class="dash" id="dash"></div>
@@ -407,17 +425,22 @@ if(o.firstSeen&&isToday(o.firstSeen))badges+='<span class="badge badge-NEW">HOY<
 else if(isNew(o.firstSeen||o.date))badges+='<span class="badge badge-NEW">NUEVA</span>';
 if(dl<=7&&dl>0)badges+='<span class="badge badge-VENCER">VENCE</span>';
 const url=o.url||'#';
-h+='<tr onclick="openMod(\''+escJS(o.id||'')+'\')">';
-h+='<td><span class="score '+scClass+'">'+sc+'</span></td>';
-h+='<td><strong>'+escHTML(o.title||'')+'</strong>'+badges+'</td>';
-h+='<td><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
-h+='<td>'+escHTML(o.region||'')+'</td>';
-h+='<td class="monto">'+amt+'</td>';
-h+='<td><code class="codigo">'+(o.id||'')+'</code></td>';
-h+='<td><strong>'+bs+'/100</strong></td>';
-h+='<td><span class="badge badge-'+rec+'">'+rec+'</span></td>';
-h+='<td class="'+cierreClass+'">'+cierreText+'</td>';
-h+='<td><a class="a-link" href="'+escURL(url)+'" target="_blank" onclick="event.stopPropagation()">Ver &rarr;</a></td>';
+const isSaved=o.isSaved||false;
+h+='<tr data-id="'+escJS(o.id||'')+'">';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><span class="score '+scClass+'">'+sc+'</span></td>';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><strong>'+escHTML(o.title||'')+'</strong>'+badges+'</td>';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer">'+escHTML(o.region||'')+'</td>';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer" class="monto">'+amt+'</td>';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><code class="codigo">'+(o.id||'')+'</code></td>';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><strong>'+bs+'/100</strong></td>';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><span class="badge badge-'+rec+'">'+rec+'</span></td>';
+h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer" class="'+cierreClass+'">'+cierreText+'</td>';
+h+='<td style="white-space:nowrap">';
+h+='<button class="btn-action btn-save" onclick="event.stopPropagation();toggleSave(\''+escJS(o.id||'')+'\',this)" title="'+(isSaved?'Quitar de guardadas':'Guardar')+'">'+(isSaved?'&#9733;':'&#9734;')+'</button>';
+h+='<button class="btn-action btn-na" onclick="event.stopPropagation();hideOp(\''+escJS(o.id||'')+'\')" title="No aplica">NO APLICA</button>';
+h+='<a class="a-link" href="'+escURL(url)+'" target="_blank" onclick="event.stopPropagation()">&rarr;</a>';
+h+='</td>';
 h+='</tr>';
 }
 $('tbl').innerHTML=h;
@@ -439,7 +462,7 @@ const dl=daysLeft(o.closingDate);
 $('mcd').innerHTML=o.closingDate?o.closingDate+' ('+(dl<=0?'Vencida':dl+' dias restantes')+')':'Sin fecha';
 const fs=o.firstSeen?new Date(o.firstSeen).toLocaleDateString('es-CL'):(o.date||'Desconocida');
 $('mfs').textContent=fs;
-$('mb').innerHTML='<strong style="color:'+(o.businessScore>=60?'#2ed573':o.businessScore>=40?'#ffa502':'#ff4757')+'">'+(o.businessScore||0)+'/100</strong>';
+$('mb').innerHTML='<div style="margin-bottom:3px"><span style="font-size:11px;color:#6b8fa3">Match:</span> <strong style="color:'+(sc>=60?'#2ed573':sc>=40?'#ffa502':'#ff4757')+'">'+sc+'/100</strong></div><div><span style="font-size:11px;color:#6b8fa3">Negocio:</span> <strong style="color:'+(bs>=60?'#2ed573':bs>=40?'#ffa502':'#ff4757')+'">'+bs+'/100</strong></div>';
 const reasons=o.businessReasons||['Sin analisis detallado'];
 $('mrs').innerHTML=reasons.map(r=>{
 const cls=r.toLowerCase().includes('monto')||r.toLowerCase().includes('riesgo')||r.toLowerCase().includes('cuidado')?'riesgo':r.toLowerCase().includes('oportunidad')||r.toLowerCase().includes('match')||r.toLowerCase().includes('buen')?'oportunidad':'';
@@ -463,14 +486,16 @@ st.filt=getFiltered();renderDash();renderTbl();
 
 function setNavTab(tab){
 st.nav=tab;
-['pipeline','novedades','vencer','historial'].forEach(t=>{
-document.getElementById('view-'+t).style.display=t===tab?'block':'none';
+['pipeline','novedades','vencer','historial','guardadas'].forEach(t=>{
+const el=document.getElementById('view-'+t);
+if(el)el.style.display=t===tab?'block':'none';
 document.getElementById('nav-'+t).classList.toggle('on',t===tab);
 });
 $('dash').style.display=tab==='pipeline'?'grid':'none';
 if(tab==='novedades')loadNovedades();
 if(tab==='vencer')loadVencer();
 if(tab==='historial')loadHistorial();
+if(tab==='guardadas'){loadSaved();}
 if(tab==='pipeline'){renderDash();renderTbl();}
 }
 
@@ -578,25 +603,106 @@ st.pid='general';
 updateAuthUI();
 window.location.reload();
 }
+async function hideOp(id){
+if(!confirm('Marcar como NO APLICA?'))return;
+try{
+const r=await fetch('/api/opportunities/'+id+'/hide',{method:'POST',headers:authHeaders(),body:JSON.stringify({profileId:st.pid})});
+const d=await r.json();
+if(d.success&&d.replacement){
+// Reemplazar: quitar la marcada, agregar reemplazo
+st.filt=st.filt.filter(o=>o.id!==id);
+st.filt.push(d.replacement);
+renderDash();renderTbl();
+$('err').textContent='NO APLICA - Se cargo nueva licitacion';
+$('err').classList.add('show');
+setTimeout(()=>$('err').classList.remove('show'),3000);
+}else{
+// Sin reemplazo disponible
+st.filt=st.filt.filter(o=>o.id!==id);
+renderDash();renderTbl();
+$('succ').textContent='NO APLICA - No hay mas licitaciones disponibles con los filtros actuales';
+$('succ').classList.add('show');
+setTimeout(()=>$('succ').classList.remove('show'),5000);
+}
+}catch(e){console.error(e);}
+}
+async function restoreOp(id){
+try{await fetch('/api/opportunities/'+id+'/restore',{method:'POST',headers:authHeaders()});runPipe();}catch(e){console.error(e);}
+}
+async function toggleSave(id,btn){
+try{
+const isSaved=btn.classList.contains('saved');
+if(isSaved){
+await fetch('/api/opportunities/'+id+'/save',{method:'DELETE',headers:authHeaders()});
+btn.classList.remove('saved');btn.innerHTML='&#9734;';btn.title='Guardar';
+}else{
+const o=st.filt.find(x=>x.id===id);
+await fetch('/api/opportunities/'+id+'/save',{method:'POST',headers:authHeaders(),body:JSON.stringify({title:o?.title,entity:o?.entity,amount:o?.amount,closingDate:o?.closingDate,url:o?.url,recommendation:o?.recommendation,score:o?.score})});
+btn.classList.add('saved');btn.innerHTML='&#9733;';btn.title='Quitar de guardadas';
+}
+}catch(e){console.error(e);}
+}
+async function loadSaved(){
+try{
+const r=await fetch('/api/opportunities/actions',{headers:authHeaders()});
+const d=await r.json();
+if(d.success){renderSaved(d.saved||[]);}
+}catch(e){console.error(e);}
+}
+function renderSaved(saved){
+var h='<h3 style="color:#ffd700;margin-bottom:12px">&#9733; Licitaciones Guardadas ('+saved.length+')</h3>';
+if(saved.length===0){h+='<p class="sin-datos">No hay licitaciones guardadas. Usa &#9734; en las tarjetas para guardar.</p>';}
+else{
+h+='<table class="tbl"><thead><tr><th>Score</th><th>Licitacion</th><th>Organismo</th><th>Monto</th><th>Recom.</th><th>Cierre</th><th>Acciones</th></tr></thead><tbody>';
+for(var i=0;i<saved.length;i++){
+var s=saved[i];
+var sc=s.score||0,scClass=sc>=80?'alta':sc>=60?'media':'baja';
+var rec=s.recommendation||'REVISION';
+var amt=s.amount?s.amount.toLocaleString('es-CL'):'N/A';
+h+='<tr>';
+h+='<td><span class="score '+scClass+'">'+sc+'</span></td>';
+h+='<td><strong>'+escHTML(s.title)+'</strong></td>';
+h+='<td><span class="entidad">'+escHTML(s.entity)+'</span></td>';
+h+='<td class="monto">'+amt+'</td>';
+h+='<td><span class="badge badge-'+rec+'">'+rec+'</span></td>';
+h+='<td>'+escHTML(s.closingDate)+'</td>';
+h+='<td style="white-space:nowrap">';
+h+='<a class="a-link" href="'+escURL(s.url)+'" target="_blank">&rarr;</a>';
+h+='<button class="btn-action btn-hide" onclick="removeSavedOp(\''+escJS(s.id)+'\')">&#10006;</button>';
+h+='</td></tr>';
+}
+h+='</tbody></table>';
+}
+h+='<div style="margin-top:12px"><button class="btn" onclick="showTab(1)">&larr; Volver al Dashboard</button></div>';
+var p=$('saved-panel');if(p)p.innerHTML=h;
+}
+async function removeSavedOp(id){
+if(!confirm('Eliminar de guardadas?'))return;
+try{await fetch('/api/opportunities/'+id+'/save',{method:'DELETE',headers:authHeaders()});loadSaved();}catch(e){console.error(e);}
+}
 function filterSelects(){
 const s=$('prof');
 const hist=$('hist-prof');
+// Guardar opciones originales solo una vez
 if(!s._orig)s._orig=Array.from(s.options).map(o=>({v:o.value,t:o.text}));
 if(!hist._orig)hist._orig=Array.from(hist.options).map(o=>({v:o.value,t:o.text}));
 const isLoggedAdmin=authToken&&authUser&&authUser.profile==='general';
 const isLoggedUser=authToken&&authUser&&authUser.profile!=='general';
+// Pipeline select
 s.innerHTML='';
 for(const o of s._orig){
 if(isLoggedAdmin){s.add(new Option(o.t,o.v));}
 else if(isLoggedUser&&o.v===authUser.profile){s.add(new Option(o.t,o.v));}
 else if(!authToken){s.add(new Option(o.t,o.v));}
 }
+// Historial select
 hist.innerHTML='';
 for(const o of hist._orig){
 if(isLoggedAdmin){hist.add(new Option(o.t,o.v));}
 else if(isLoggedUser&&(o.v===authUser.profile||o.v==='all')){hist.add(new Option(o.t,o.v));}
 else if(!authToken){hist.add(new Option(o.t,o.v));}
 }
+// Forzar valor actual
 if(st.pid)s.value=st.pid;
 }
 
@@ -617,7 +723,7 @@ function escJS(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/
 function escURL(s){return s.replace(/"/g,'%22').replace(/'/g,'%27')}
 
 function authHeaders(base){
-const h=base||{};
+const h={'Content-Type':'application/json'};
 if(authToken)h['Authorization']='Bearer '+authToken;
 return h;
 }
