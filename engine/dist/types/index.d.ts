@@ -23,7 +23,6 @@ export interface PipelineConfig {
 }
 export interface NormalizedOpportunity {
     id: string;
-    code: string;
     title: string;
     entity: string;
     region: string;
@@ -31,7 +30,6 @@ export interface NormalizedOpportunity {
     source: string;
     url: string;
     date: string;
-    closingDate: string;
     status: string;
     category: string;
     description: string;

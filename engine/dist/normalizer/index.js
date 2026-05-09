@@ -11,7 +11,6 @@ function normalizeOpportunities(raw) {
 function normalizeSingle(raw) {
     return {
         id: raw.codigo?.trim() || generateId(),
-        code: raw.codigo?.trim() || '',
         title: sanitizeText(raw.nombre),
         entity: sanitizeText(raw.organismo),
         region: sanitizeRegion(raw.region),
@@ -19,7 +18,6 @@ function normalizeSingle(raw) {
         source: raw.fuente || 'Desconocida',
         url: raw.url || `https://www.mercadopublico.cl/Licitation/Details/${raw.codigo}`,
         date: raw.fecha_publicacion || new Date().toISOString().split('T')[0],
-        closingDate: raw.fecha_cierre || '',
         status: raw.estado || 'Publicada',
         category: raw.categoria || 'General',
         description: sanitizeText(raw.descripcion),
