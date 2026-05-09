@@ -14,6 +14,7 @@ const fs_1 = __importDefault(require("fs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const decision_1 = require("./decision");
+const userActions_1 = require("./userActions");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -81,11 +82,8 @@ function saveHistorial() {
 }
 // Cargar al iniciar
 loadHistorial();
-// ==========================================
-// PROFILES
-// ==========================================
 const PROFILES = [
-    { id: 'constructora', name: 'Constructora / Obras Civiles', keywords: ['construccion', 'obra civil', 'obra publica', 'infraestructura', 'edificacion', 'puente', 'camino', 'pavimentacion', 'hormigon', 'asfalto', 'movimiento de tierra', 'demolicion', 'excavacion', 'terraplen', 'estructura', 'tabiqueria', 'terminaciones', 'instalaciones', 'conservacion', 'escuela', 'plaza publica', 'sede comunitaria', 'obra gruesa', 'obra menor', 'reparacion', 'mantencion', 'ampliacion', 'remodelacion', 'climatizacion', 'hvac', 'aire acondicionado', 'calefaccion', 'ventilacion', 'bomba de calor', 'eficiencia energetica', 'inverter', 'refrigeracion', 'calefactor', 'sistema termico', 'ventilacion mecanica', 'sistema hvac', 'montaje industrial', 'estructura metalica', 'silo', 'laboratorio', 'izaje', 'soldadura certificada', 'torque controlado', 'andamio', 'andamio multidireccional', 'estructura gran porte', 'montaje estructural', 'cmpc', 'celulosa', 'industria forestal', 'planta industrial', 'bodega', 'galpon', 'centro distribucion', 'parque industrial', 'caminos'], excluded: ['medico', 'hospital', 'insumos medicos', 'quirurgico', 'material esteril', 'instrumental quirurgico', 'equipamiento medico', 'medicamentos', 'oficina', 'mueble', 'computador', 'impresora', 'papeleria', 'software', 'mobiliario', 'silla oficina', 'escritorio', 'servicio transporte', 'seguro', 'consultoria juridica', 'estudio contable', 'servicio limpieza', 'servicio vigilancia', 'arriendo vehiculo', 'servicio de buffet', 'alimentacion', 'catering', 'buceo', 'submarino', 'deporte acuatico', 'equipo de buceo', 'imprenta', 'impresion offset', 'banner publicitario', 'pendon pvc', 'desarrollo software', 'aplicacion movil', 'ciberseguridad', 'plataforma digital'] },
+    { id: 'constructora', name: 'Constructora / Obras Civiles', keywords: ['construccion', 'obra civil', 'obra publica', 'infraestructura', 'edificacion', 'puente', 'camino', 'pavimentacion', 'hormigon', 'asfalto', 'movimiento de tierra', 'demolicion', 'excavacion', 'terraplen', 'estructura', 'tabiqueria', 'terminaciones', 'instalaciones', 'conservacion', 'escuela', 'plaza publica', 'sede comunitaria', 'obra gruesa', 'obra menor', 'reparacion', 'mantencion', 'ampliacion', 'remodelacion', 'climatizacion', 'hvac', 'aire acondicionado', 'calefaccion', 'ventilacion', 'bomba de calor', 'eficiencia energetica', 'inverter', 'refrigeracion', 'calefactor', 'sistema termico', 'ventilacion mecanica', 'sistema hvac', 'montaje industrial', 'estructura metalica', 'silo', 'laboratorio', 'izaje', 'soldadura certificada', 'torque controlado', 'andamio', 'andamio multidireccional', 'estructura gran porte', 'montaje estructural', 'cmpc', 'celulosa', 'industria forestal', 'planta industrial', 'bodega', 'galpon', 'centro distribucion', 'parque industrial', 'caminos'], excluded: ['medico', 'hospital', 'insumos medicos', 'quirurgico', 'material esteril', 'instrumental quirurgico', 'equipamiento medico', 'medicamentos', 'oficina', 'mueble', 'computador', 'impresora', 'papeleria', 'software', 'mobiliario', 'silla oficina', 'escritorio', 'servicio transporte', 'seguro', 'consultoria juridica', 'estudio contable', 'servicio limpieza', 'servicio vigilancia', 'arriendo vehiculo', 'servicio de buffet', 'alimentacion', 'catering', 'buceo', 'submarino', 'deporte acuatico', 'equipo de buceo', 'imprenta', 'impresion offset', 'banner publicitario', 'pendon pvc', 'desarrollo software', 'aplicacion movil', 'ciberseguridad', 'plataforma digital'], regions: ['Maule', 'Biobio', 'Araucania'], minAmount: 100000000, maxAmount: 500000000 },
     { id: 'tecnologia', name: 'Tecnologia / Software / TI', keywords: ['software', 'desarrollo software', 'sistema informatico', 'plataforma digital', 'aplicacion movil', 'ciberseguridad', 'hosting cloud', 'data center', 'red de datos', 'telecomunicaciones'], excluded: ['construccion', 'hormigon', 'asfalto', 'medico', 'hospital'] },
     { id: 'salud', name: 'Salud / Insumos Medicos', keywords: ['insumos medicos', 'equipamiento medico', 'medicamentos', 'material de curacion', 'material esteril', 'instrumental quirurgico', 'equipo de rayos x', 'tomografo', 'resonancia magnetica'], excluded: ['oficina', 'papeleria', 'computador', 'mueble', 'limpieza'] },
     { id: 'imprenta', name: 'Imprenta / Grafica / Publicidad', keywords: ['imprenta', 'impresion offset', 'impresion digital', 'pendon pvc', 'banner publicitario', 'gigantografia', 'letrero luminoso', 'rotulacion vehicular', 'troquelado', 'corte laser', 'vinilo de corte', 'serigrafia'], excluded: ['medico', 'hospital', 'insumos medicos', 'quirurgico'] },
@@ -380,7 +378,7 @@ app.get('/api/auth/me', (req, res) => {
 // ---- PIPELINE ----
 let lastResult = null;
 app.post('/api/opportunities/run', async (req, res) => {
-    const effectiveProfileId = req.user ? req.user.profile : (req.body?.profileId || 'general');
+    const effectiveProfileId = req.user ? (req.user.profile === 'general' ? (req.body?.profileId || 'general') : req.user.profile) : (req.body?.profileId || 'general');
     const { limit = 50 } = req.body || {};
     const profile = PROFILES.find(p => p.id === effectiveProfileId) || PROFILES[4];
     const now = new Date().toISOString();
@@ -408,6 +406,7 @@ app.post('/api/opportunities/run', async (req, res) => {
             // Perfil General: todo EVALUAR para que el usuario decida manualmente
             if (effectiveProfileId === 'general')
                 recommendation = 'EVALUAR';
+            const isNew = !historial[op.id];
             const scored = {
                 ...op,
                 score: finalScore,
@@ -417,6 +416,7 @@ app.post('/api/opportunities/run', async (req, res) => {
                 businessScore: bizSc.score,
                 businessReasons: bizSc.reasons,
                 recommendation,
+                isNew,
                 // === DECISION ENGINE v5.1 (capa adicional, no invasiva) ===
                 v5: {}
             };
@@ -473,10 +473,24 @@ app.post('/api/opportunities/run', async (req, res) => {
             novedades: novedades.length,
             historialTotal: Object.keys(historial).length
         };
-        lastResult = { profileId: effectiveProfileId, runAt: now, stats, opportunities };
+        const actions = (0, userActions_1.getActions)();
+        const visibleOps = opportunities.filter((o) => !actions.hidden.includes(o.id));
+        const opsWithSaved = visibleOps.map((o) => ({
+            ...o,
+            isSaved: actions.saved.some((s) => s.id === o.id)
+        }));
+        const visibleStats = {
+            ...stats,
+            total: visibleOps.length,
+            alta: visibleOps.filter((o) => o.priority === 'alta').length,
+            media: visibleOps.filter((o) => o.priority === 'media').length,
+            baja: visibleOps.filter((o) => o.priority === 'baja').length,
+            ocultas: opportunities.length - visibleOps.length
+        };
+        lastResult = { profileId: effectiveProfileId, runAt: now, stats: visibleStats, opportunities: opsWithSaved };
         res.setHeader('Cache-Control', 'no-store');
-        res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities });
-        console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades, ${novedades.length} novedades, ${stats.historialTotal} en historial`);
+        res.json({ success: true, profileId: profile.id, profileName: profile.name, ...visibleStats, opportunities: opsWithSaved });
+        console.log(`[API] Pipeline OK - ${visibleOps.length}/${opportunities.length} visibles, ${novedades.length} novedades, ${actions.hidden.length} ocultas, ${actions.saved.length} guardadas`);
     }
     catch (error) {
         console.error('[API] Pipeline error:', error.message);
@@ -491,6 +505,197 @@ app.get('/api/opportunities', (_req, res) => {
         return;
     }
     res.json({ success: true, ...lastResult });
+});
+// ---- DEMO ENDPOINT (mock data for frontend development) ----
+const DEMO_OPPORTUNITIES = [
+    {
+        id: "3685-11-L126",
+        title: "Construccion de Puente Peatonal Sector Centro",
+        entity: "Municipalidad de Concepcion",
+        region: "Biobio",
+        amount: 185000000,
+        source: "MercadoPublico",
+        url: "https://www.mercadopublico.cl/fichaLicitacion.html?idLicitacion=3685-11-L126",
+        date: "2026-05-01",
+        status: "Publicada",
+        category: "Obras Civiles",
+        description: "Construccion de puente peatonal en sector centro de la ciudad, incluye obras civiles, fundaciones y estructura metalica",
+        score: 87,
+        priority: "alta",
+        matchedKeywords: ["construccion", "obras civiles", "puente"],
+        matchScore: 82,
+        aiScore: null,
+        closingDate: "2026-05-28",
+        recommendation: "POSTULAR",
+        businessScore: 85,
+        businessReasons: ["Monto compatible con capacidad", "Experiencia previa en puentes"],
+        isNew: true,
+        v5: {
+            decisionValue: 0.87,
+            probabilitySuccess: 0.85,
+            expectedProfit: 25000000,
+            riskScore: 2,
+            fitScore: 0.92,
+            bestExecutorId: "dyg_constructora",
+            bestExecutorName: "DYG Constructora",
+            decision: "POSTULAR",
+            reasoning: ["Match directo en rubro construccion", "Monto estimado compatible", "Plazo adecuado", "Region cercana a operaciones"]
+        }
+    },
+    {
+        id: "4821-5-LE26",
+        title: "Reparacion y Mantencion Edificio Municipal",
+        entity: "Municipalidad de Los Angeles",
+        region: "Biobio",
+        amount: 42000000,
+        source: "MercadoPublico",
+        url: "https://www.mercadopublico.cl/fichaLicitacion.html?idLicitacion=4821-5-LE26",
+        date: "2026-05-03",
+        status: "Publicada",
+        category: "Mantencion",
+        description: "Reparacion de techumbre, pintura exterior y mantencion general de edificio municipal",
+        score: 72,
+        priority: "media",
+        matchedKeywords: ["reparacion", "mantencion", "edificio"],
+        matchScore: 68,
+        aiScore: null,
+        closingDate: "2026-06-15",
+        recommendation: "EVALUAR",
+        businessScore: 65,
+        businessReasons: ["Monto bajo pero recurrente", "Buena relacion con municipalidad"],
+        isNew: true,
+        v5: {
+            decisionValue: 0.65,
+            probabilitySuccess: 0.70,
+            expectedProfit: 8000000,
+            riskScore: 3,
+            fitScore: 0.75,
+            bestExecutorId: "dyg_constructora",
+            bestExecutorName: "DYG Constructora",
+            decision: "EVALUAR",
+            reasoning: ["Match en rubro mantencion", "Monto bajo pero recurrente", "Requiere visita tecnica previa"]
+        }
+    },
+    {
+        id: "7152-3-L126",
+        title: "Construccion Sala de Emergencias Hospital Regional",
+        entity: "Servicio de Salud Biobio",
+        region: "Biobio",
+        amount: 890000000,
+        source: "MercadoPublico",
+        url: "https://www.mercadopublico.cl/fichaLicitacion.html?idLicitacion=7152-3-L126",
+        date: "2026-04-28",
+        status: "Publicada",
+        category: "Obras Civiles",
+        description: "Construccion de nueva sala de emergencias para Hospital Regional, obra mayor con estructura de hormigon y acero",
+        score: 78,
+        priority: "media",
+        matchedKeywords: ["construccion", "obras civiles", "hormigon"],
+        matchScore: 74,
+        aiScore: null,
+        closingDate: "2026-06-30",
+        recommendation: "EVALUAR",
+        businessScore: 60,
+        businessReasons: ["Monto alto requiere garantias", "Experiencia en salud limitada"],
+        isNew: false,
+        v5: {
+            decisionValue: 0.72,
+            probabilitySuccess: 0.65,
+            expectedProfit: 120000000,
+            riskScore: 5,
+            fitScore: 0.68,
+            bestExecutorId: "dyg_constructora",
+            bestExecutorName: "DYG Constructora",
+            decision: "EVALUAR",
+            reasoning: ["Monto muy alto para capacidad actual", "Experiencia limitada en salud", "Plazo extendido favorable"]
+        }
+    },
+    {
+        id: "2934-9-CD26",
+        title: "Obras de Pavimentacion Calle Principal Yumbel",
+        entity: "Municipalidad de Yumbel",
+        region: "Biobio",
+        amount: 95000000,
+        source: "MercadoPublico",
+        url: "https://www.mercadopublico.cl/fichaLicitacion.html?idLicitacion=2934-9-CD26",
+        date: "2026-05-04",
+        status: "Publicada",
+        category: "Obras Civiles",
+        description: "Pavimentacion con asfalto de 2.5km de calle principal, incluye obras de evacuacion de aguas lluvias",
+        score: 92,
+        priority: "alta",
+        matchedKeywords: ["obras civiles", "pavimentacion", "asfalto"],
+        matchScore: 88,
+        aiScore: null,
+        closingDate: "2026-05-22",
+        recommendation: "POSTULAR",
+        businessScore: 90,
+        businessReasons: ["Experiencia directa en pavimentacion", "Region de operaciones"],
+        isNew: true,
+        v5: {
+            decisionValue: 0.92,
+            probabilitySuccess: 0.90,
+            expectedProfit: 18000000,
+            riskScore: 2,
+            fitScore: 0.95,
+            bestExecutorId: "dyg_constructora",
+            bestExecutorName: "DYG Constructora",
+            decision: "POSTULAR",
+            reasoning: ["Match perfecto en rubro pavimentacion", "Experiencia previa comprobada", "Monto ideal para capacidad", "Region de operaciones"]
+        }
+    },
+    {
+        id: "5487-2-TI26",
+        title: "Suministro e Instalacion de Cercos Perimetrales",
+        entity: "Ministerio de Obras Publicas",
+        region: "Maule",
+        amount: 18000000,
+        source: "MercadoPublico",
+        url: "https://www.mercadopublico.cl/fichaLicitacion.html?idLicitacion=5487-2-TI26",
+        date: "2026-04-15",
+        status: "Publicada",
+        category: "Construccion",
+        description: "Suministro e instalacion de cercos perimetrales en dependencias del ministerio, incluye portones de acceso",
+        score: 45,
+        priority: "baja",
+        matchedKeywords: ["construccion", "instalacion"],
+        matchScore: 42,
+        aiScore: null,
+        closingDate: "2026-05-18",
+        recommendation: "REVISION",
+        businessScore: 40,
+        businessReasons: ["Monto bajo", "Region fuera de cobertura habitual"],
+        isNew: false,
+        v5: {
+            decisionValue: 0.42,
+            probabilitySuccess: 0.35,
+            expectedProfit: 3500000,
+            riskScore: 4,
+            fitScore: 0.45,
+            bestExecutorId: "dyg_constructora",
+            bestExecutorName: "DYG Constructora",
+            decision: "REVISION",
+            reasoning: ["Region fuera de cobertura habitual", "Monto bajo vs costo de desplazamiento", "Rubro secundario"]
+        }
+    }
+];
+app.get('/api/opportunities/demo', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const stats = {
+        total: DEMO_OPPORTUNITIES.length,
+        alta: DEMO_OPPORTUNITIES.filter((o) => o.priority === 'alta').length,
+        media: DEMO_OPPORTUNITIES.filter((o) => o.priority === 'media').length,
+        baja: DEMO_OPPORTUNITIES.filter((o) => o.priority === 'baja').length,
+        novedades: 3,
+        historialTotal: 5
+    };
+    res.json({
+        success: true,
+        profileId: 'constructora',
+        profileName: 'Constructora',
+        ...stats,
+        opportunities: DEMO_OPPORTUNITIES
+    });
 });
 // ---- HISTORIAL (30 dias) ----
 app.get('/api/opportunities/historial', (req, res) => {
@@ -566,6 +771,137 @@ app.get('/api/opportunities/stats', (_req, res) => {
             novedades24h: Object.values(historial).filter((h) => h.firstSeen >= hace24h).length
         }
     });
+});
+// ---- USER ACTIONS (Hide / Save) ----
+app.get('/api/opportunities/actions', (req, res) => {
+    const actions = (0, userActions_1.getActions)();
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, hidden: actions.hidden, saved: actions.saved });
+});
+app.post('/api/opportunities/:id/hide', (req, res) => {
+    const { id } = req.params;
+    const profileId = req.body?.profileId || req.query?.profileId || 'general';
+    const visibleIds = req.body?.visibleIds || [];
+    const profile = PROFILES.find(p => p.id === profileId);
+    (0, userActions_1.hideOpportunity)(id);
+    // Buscar reemplazo del historial con filtros del perfil - ALEATORIO
+    const actions = (0, userActions_1.getActions)();
+    const savedIds = actions.saved.map((s) => s.id);
+    const allEntries = Object.values(historial);
+    const candidates = allEntries.filter((h) => {
+        // No oculta, no guardada, no la misma, no visible actualmente
+        if (actions.hidden.includes(h.id) || savedIds.includes(h.id) || h.id === id)
+            return false;
+        if (visibleIds.includes(h.id))
+            return false;
+        // Mismo perfil
+        if (!h.profiles || !h.profiles.includes(profileId))
+            return false;
+        // Score minimo
+        if ((h.score || 0) < 50)
+            return false;
+        // Filtro region
+        if (profile?.regions && profile.regions.length > 0) {
+            const regionMatch = profile.regions.some((r) => (h.region || '').toLowerCase().includes(r.toLowerCase()));
+            if (!regionMatch)
+                return false;
+        }
+        // Filtro monto
+        const amt = h.amount || 0;
+        const min = profile?.minAmount || 0;
+        const max = profile?.maxAmount || Infinity;
+        if (amt < min || amt > max)
+            return false;
+        return true;
+    });
+    // Seleccion ALEATORIA entre todos los candidatos para evitar repeticion
+    const replacement = candidates.length > 0
+        ? candidates[Math.floor(Math.random() * candidates.length)]
+        : null;
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, message: 'No aplica - oculta', replacement: replacement || null });
+});
+app.post('/api/opportunities/:id/restore', (req, res) => {
+    const { id } = req.params;
+    (0, userActions_1.restoreOpportunity)(id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, message: 'Restaurada' });
+});
+app.post('/api/opportunities/:id/save', (req, res) => {
+    const { id } = req.params;
+    const { title, entity, amount, closingDate, url, recommendation, score } = req.body || {};
+    (0, userActions_1.saveOpportunity)({ id, title, entity, amount, closingDate, url, recommendation, score });
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, message: 'Guardada' });
+});
+app.delete('/api/opportunities/:id/save', (req, res) => {
+    const { id } = req.params;
+    (0, userActions_1.removeSaved)(id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, message: 'Eliminada de guardadas' });
+});
+// ---- CUBICADOR DYG ----
+app.get('/api/cubicador/licitaciones', (req, res) => {
+    // Solo perfil constructora
+    const profile = PROFILES.find(p => p.id === 'constructora');
+    if (!profile) {
+        res.status(404).json({ success: false, error: 'Perfil constructora no encontrado' });
+        return;
+    }
+    const { opportunities = [] } = lastResult || {};
+    const actions = (0, userActions_1.getActions)();
+    const visible = opportunities
+        .filter((o) => !actions.hidden.includes(o.id))
+        .map((o) => ({
+        id: o.id,
+        code: o.code,
+        title: o.title,
+        entity: o.entity,
+        region: o.region,
+        amount: o.amount,
+        closingDate: o.closingDate,
+        url: o.url,
+        description: o.description,
+        category: o.category,
+        recommendation: o.recommendation,
+        score: o.score,
+        priority: o.priority,
+        fitScore: o.v5?.fitScore,
+        probabilitySuccess: o.v5?.probabilitySuccess,
+        bestExecutorName: o.v5?.bestExecutorName,
+        reasoning: o.v5?.reasoning,
+        isNew: o.isNew,
+        isSaved: actions.saved.some((s) => s.id === o.id)
+    }));
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, count: visible.length, licitaciones: visible });
+});
+// Generar URL precargada para cubicador
+app.get('/api/cubicador/:id/precargar', (req, res) => {
+    const { id } = req.params;
+    const { opportunities = [] } = lastResult || {};
+    const o = opportunities.find((x) => x.id === id);
+    if (!o) {
+        res.status(404).json({ success: false, error: 'Licitacion no encontrada' });
+        return;
+    }
+    // URL del cubicador DYG con datos precargados
+    const params = new URLSearchParams({
+        licitacion_id: o.id || '',
+        titulo: (o.title || '').substring(0, 200),
+        organismo: (o.entity || '').substring(0, 200),
+        region: o.region || '',
+        monto: String(o.amount || 0),
+        cierre: o.closingDate || '',
+        categoria: o.category || '',
+        descripcion: (o.description || '').substring(0, 500),
+        recomendacion: o.recommendation || '',
+        score: String(o.score || 0),
+        url_mp: o.url || ''
+    });
+    const cubicadorUrl = `https://dygconstructora.cl/cubicador?${params.toString()}`;
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, url: cubicadorUrl, licitacion: { id: o.id, title: o.title, amount: o.amount } });
 });
 // ---- PORTFOLIO ----
 app.get('/api/portfolio', (req, res) => {

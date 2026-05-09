@@ -606,7 +606,8 @@ window.location.reload();
 async function hideOp(id){
 if(!confirm('Marcar como NO APLICA?'))return;
 try{
-const r=await fetch('/api/opportunities/'+id+'/hide',{method:'POST',headers:authHeaders(),body:JSON.stringify({profileId:st.pid})});
+const visibleIds=st.filt.map(o=>o.id);
+const r=await fetch('/api/opportunities/'+id+'/hide',{method:'POST',headers:authHeaders(),body:JSON.stringify({profileId:st.pid,visibleIds})});
 const d=await r.json();
 if(d.success&&d.replacement){
 // Reemplazar: quitar la marcada, agregar reemplazo

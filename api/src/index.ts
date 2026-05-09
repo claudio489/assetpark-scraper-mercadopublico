@@ -884,15 +884,17 @@ app.get('/api/opportunities/actions', (req: Request, res: Response) => {
 app.post('/api/opportunities/:id/hide', (req: Request, res: Response) => {
   const { id } = req.params;
   const profileId = req.body?.profileId || req.query?.profileId || 'general';
+  const visibleIds = req.body?.visibleIds || [];
   const profile = PROFILES.find(p => p.id === profileId);
   hideOpportunity(id);
-  // Buscar reemplazo del historial con filtros del perfil
+  // Buscar reemplazo del historial con filtros del perfil - ALEATORIO
   const actions = getActions();
   const savedIds = actions.saved.map((s: any) => s.id);
   const allEntries = Object.values(historial);
-  const replacement = allEntries.find((h: any) => {
-    // No oculta, no guardada, no la misma
+  const candidates = allEntries.filter((h: any) => {
+    // No oculta, no guardada, no la misma, no visible actualmente
     if (actions.hidden.includes(h.id) || savedIds.includes(h.id) || h.id === id) return false;
+    if (visibleIds.includes(h.id)) return false; // no reinsertar una que ya se ve
     // Mismo perfil
     if (!h.profiles || !h.profiles.includes(profileId)) return false;
     // Score minimo
@@ -909,6 +911,10 @@ app.post('/api/opportunities/:id/hide', (req: Request, res: Response) => {
     if (amt < min || amt > max) return false;
     return true;
   });
+  // Seleccion ALEATORIA entre todos los candidatos para evitar repeticion
+  const replacement = candidates.length > 0
+    ? candidates[Math.floor(Math.random() * candidates.length)]
+    : null;
   res.setHeader('Cache-Control', 'no-store');
   res.json({ success: true, message: 'No aplica - oculta', replacement: replacement || null });
 });

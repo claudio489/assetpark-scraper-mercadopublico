@@ -6,7 +6,7 @@ services:
     region: oregon
     buildCommand: |
       set -e
-      echo "=== AssetPark Scraper v5.2 + Auth Build ==="
+      echo "=== AssetPark Scraper v5.1 Build ==="
       echo "=== Instalando Engine ==="
       cd engine && npm install && cd ..
       echo "=== Compilando Engine ==="
