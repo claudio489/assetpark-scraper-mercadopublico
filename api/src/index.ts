@@ -556,25 +556,24 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
     };
 
     const actions = getActions();
-    const visibleOps = opportunities.filter((o: any) => !actions.hidden.includes(o.id));
-    const opsWithSaved = visibleOps.map((o: any) => ({
+    const opsWithSaved = opportunities.map((o: any) => ({
       ...o,
       isSaved: actions.saved.some((s: any) => s.id === o.id)
     }));
-    const visibleStats = {
+    const outStats = {
       ...stats,
-      total: visibleOps.length,
-      alta: visibleOps.filter((o: any) => o.priority === 'alta').length,
-      media: visibleOps.filter((o: any) => o.priority === 'media').length,
-      baja: visibleOps.filter((o: any) => o.priority === 'baja').length,
-      ocultas: opportunities.length - visibleOps.length
+      total: opportunities.length,
+      alta: opportunities.filter((o: any) => o.priority === 'alta').length,
+      media: opportunities.filter((o: any) => o.priority === 'media').length,
+      baja: opportunities.filter((o: any) => o.priority === 'baja').length,
+      ocultas: 0
     };
 
-    lastResult = { profileId: effectiveProfileId, runAt: now, stats: visibleStats, opportunities: opsWithSaved };
+    lastResult = { profileId: effectiveProfileId, runAt: now, stats: outStats, opportunities: opsWithSaved };
 
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, profileId: profile.id, profileName: profile.name, ...visibleStats, opportunities: opsWithSaved });
-    console.log(`[API] Pipeline OK - ${visibleOps.length}/${opportunities.length} visibles, ${novedades.length} novedades, ${actions.hidden.length} ocultas, ${actions.saved.length} guardadas`);
+    res.json({ success: true, profileId: profile.id, profileName: profile.name, ...outStats, opportunities: opsWithSaved });
+    console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades, ${novedades.length} novedades, ${actions.saved.length} guardadas`);
 
   } catch (error) {
     console.error('[API] Pipeline error:', (error as Error).message);
@@ -885,33 +884,17 @@ app.post('/api/opportunities/:id/hide', (req: Request, res: Response) => {
   const { id } = req.params;
   const profileId = req.body?.profileId || req.query?.profileId || 'general';
   const visibleIds = req.body?.visibleIds || [];
-  const profile = PROFILES.find(p => p.id === profileId);
-  hideOpportunity(id);
-  // Buscar reemplazo del historial con filtros del perfil - ALEATORIO
-  const actions = getActions();
-  const savedIds = actions.saved.map((s: any) => s.id);
+  // ELIMINAR del historial.json para siempre
+  delete historial[id];
+  saveHistorial();
+  // Buscar reemplazo del MISMO PERFIL, aleatorio
   const allEntries = Object.values(historial);
   const candidates = allEntries.filter((h: any) => {
-    // No oculta, no guardada, no la misma, no visible actualmente
-    if (actions.hidden.includes(h.id) || savedIds.includes(h.id) || h.id === id) return false;
-    if (visibleIds.includes(h.id)) return false; // no reinsertar una que ya se ve
-    // Mismo perfil
+    if (h.id === id) return false;
+    if (visibleIds.includes(h.id)) return false;
     if (!h.profiles || !h.profiles.includes(profileId)) return false;
-    // Score minimo
-    if ((h.score || 0) < 50) return false;
-    // Filtro region
-    if (profile?.regions && profile.regions.length > 0) {
-      const regionMatch = profile.regions.some((r: string) => (h.region || '').toLowerCase().includes(r.toLowerCase()));
-      if (!regionMatch) return false;
-    }
-    // Filtro monto
-    const amt = h.amount || 0;
-    const min = profile?.minAmount || 0;
-    const max = profile?.maxAmount || Infinity;
-    if (amt < min || amt > max) return false;
     return true;
   });
-  // Seleccion ALEATORIA entre todos los candidatos para evitar repeticion
   const replacement = candidates.length > 0
     ? candidates[Math.floor(Math.random() * candidates.length)]
     : null;

@@ -428,7 +428,7 @@ const url=o.url||'#';
 const isSaved=o.isSaved||false;
 h+='<tr data-id="'+escJS(o.id||'')+'">';
 h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><span class="score '+scClass+'">'+sc+'</span></td>';
-h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><strong>'+escHTML(o.title||'')+'</strong>'+badges+'</td>';
+h+='<td><a class="a-link" href="'+escURL(url)+'" target="_blank" style="font-weight:700;font-size:.9rem;color:#e2e8f0" onclick="event.stopPropagation()">'+escHTML(o.title||'')+'</a>'+badges+'</td>';
 h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
 h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer">'+escHTML(o.region||'')+'</td>';
 h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer" class="monto">'+amt+'</td>';
@@ -462,6 +462,7 @@ const dl=daysLeft(o.closingDate);
 $('mcd').innerHTML=o.closingDate?o.closingDate+' ('+(dl<=0?'Vencida':dl+' dias restantes')+')':'Sin fecha';
 const fs=o.firstSeen?new Date(o.firstSeen).toLocaleDateString('es-CL'):(o.date||'Desconocida');
 $('mfs').textContent=fs;
+const sc=o.score||0;const bs=o.businessScore||0;
 $('mb').innerHTML='<div style="margin-bottom:3px"><span style="font-size:11px;color:#6b8fa3">Match:</span> <strong style="color:'+(sc>=60?'#2ed573':sc>=40?'#ffa502':'#ff4757')+'">'+sc+'/100</strong></div><div><span style="font-size:11px;color:#6b8fa3">Negocio:</span> <strong style="color:'+(bs>=60?'#2ed573':bs>=40?'#ffa502':'#ff4757')+'">'+bs+'/100</strong></div>';
 const reasons=o.businessReasons||['Sin analisis detallado'];
 $('mrs').innerHTML=reasons.map(r=>{

@@ -474,23 +474,22 @@ app.post('/api/opportunities/run', async (req, res) => {
             historialTotal: Object.keys(historial).length
         };
         const actions = (0, userActions_1.getActions)();
-        const visibleOps = opportunities.filter((o) => !actions.hidden.includes(o.id));
-        const opsWithSaved = visibleOps.map((o) => ({
+        const opsWithSaved = opportunities.map((o) => ({
             ...o,
             isSaved: actions.saved.some((s) => s.id === o.id)
         }));
-        const visibleStats = {
+        const outStats = {
             ...stats,
-            total: visibleOps.length,
-            alta: visibleOps.filter((o) => o.priority === 'alta').length,
-            media: visibleOps.filter((o) => o.priority === 'media').length,
-            baja: visibleOps.filter((o) => o.priority === 'baja').length,
-            ocultas: opportunities.length - visibleOps.length
+            total: opportunities.length,
+            alta: opportunities.filter((o) => o.priority === 'alta').length,
+            media: opportunities.filter((o) => o.priority === 'media').length,
+            baja: opportunities.filter((o) => o.priority === 'baja').length,
+            ocultas: 0
         };
-        lastResult = { profileId: effectiveProfileId, runAt: now, stats: visibleStats, opportunities: opsWithSaved };
+        lastResult = { profileId: effectiveProfileId, runAt: now, stats: outStats, opportunities: opsWithSaved };
         res.setHeader('Cache-Control', 'no-store');
-        res.json({ success: true, profileId: profile.id, profileName: profile.name, ...visibleStats, opportunities: opsWithSaved });
-        console.log(`[API] Pipeline OK - ${visibleOps.length}/${opportunities.length} visibles, ${novedades.length} novedades, ${actions.hidden.length} ocultas, ${actions.saved.length} guardadas`);
+        res.json({ success: true, profileId: profile.id, profileName: profile.name, ...outStats, opportunities: opsWithSaved });
+        console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades, ${novedades.length} novedades, ${actions.saved.length} guardadas`);
     }
     catch (error) {
         console.error('[API] Pipeline error:', error.message);
@@ -782,44 +781,22 @@ app.post('/api/opportunities/:id/hide', (req, res) => {
     const { id } = req.params;
     const profileId = req.body?.profileId || req.query?.profileId || 'general';
     const visibleIds = req.body?.visibleIds || [];
-    const profile = PROFILES.find(p => p.id === profileId);
-    (0, userActions_1.hideOpportunity)(id);
-    // Buscar reemplazo del historial con filtros del perfil - ALEATORIO
-    const actions = (0, userActions_1.getActions)();
-    const savedIds = actions.saved.map((s) => s.id);
+    // ELIMINAR del historial.json para siempre
+    delete historial[id];
+    saveHistorial();
+    // Buscar reemplazo del MISMO PERFIL, aleatorio, excluyendo visibles
     const allEntries = Object.values(historial);
     const candidates = allEntries.filter((h) => {
-        // No oculta, no guardada, no la misma, no visible actualmente
-        if (actions.hidden.includes(h.id) || savedIds.includes(h.id) || h.id === id)
-            return false;
-        if (visibleIds.includes(h.id))
-            return false;
-        // Mismo perfil
-        if (!h.profiles || !h.profiles.includes(profileId))
-            return false;
-        // Score minimo
-        if ((h.score || 0) < 50)
-            return false;
-        // Filtro region
-        if (profile?.regions && profile.regions.length > 0) {
-            const regionMatch = profile.regions.some((r) => (h.region || '').toLowerCase().includes(r.toLowerCase()));
-            if (!regionMatch)
-                return false;
-        }
-        // Filtro monto
-        const amt = h.amount || 0;
-        const min = profile?.minAmount || 0;
-        const max = profile?.maxAmount || Infinity;
-        if (amt < min || amt > max)
-            return false;
+        if (h.id === id) return false;
+        if (visibleIds.includes(h.id)) return false;
+        if (!h.profiles || !h.profiles.includes(profileId)) return false;
         return true;
     });
-    // Seleccion ALEATORIA entre todos los candidatos para evitar repeticion
     const replacement = candidates.length > 0
         ? candidates[Math.floor(Math.random() * candidates.length)]
         : null;
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, message: 'No aplica - oculta', replacement: replacement || null });
+    res.json({ success: true, message: 'Eliminada', replacement: replacement || null });
 });
 app.post('/api/opportunities/:id/restore', (req, res) => {
     const { id } = req.params;
@@ -849,10 +826,7 @@ app.get('/api/cubicador/licitaciones', (req, res) => {
         return;
     }
     const { opportunities = [] } = lastResult || {};
-    const actions = (0, userActions_1.getActions)();
-    const visible = opportunities
-        .filter((o) => !actions.hidden.includes(o.id))
-        .map((o) => ({
+    const visible = opportunities.map((o) => ({
         id: o.id,
         code: o.code,
         title: o.title,
@@ -1058,3 +1032,4 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log(`Decision Engine: ${decision_1.EXECUTORS.length} ejecutoras configuradas`);
     console.log(`Historial: ${Object.keys(historial).length} licitaciones persistidas`);
 });
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
