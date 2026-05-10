@@ -465,31 +465,26 @@ app.post('/api/opportunities/run', async (req, res) => {
             const entry = historial[o.id];
             return entry && entry.firstSeen >= hace24h;
         });
-        const stats = {
-            total: opportunities.length,
-            alta: opportunities.filter((o) => o.priority === 'alta').length,
-            media: opportunities.filter((o) => o.priority === 'media').length,
-            baja: opportunities.filter((o) => o.priority === 'baja').length,
-            novedades: novedades.length,
-            historialTotal: Object.keys(historial).length
-        };
         const actions = (0, userActions_1.getActions)();
-        const opsWithSaved = opportunities.map((o) => ({
+        const hiddenCount = actions.hidden.length;
+        const activeOps = opportunities.filter((o) => !actions.hidden.includes(o.id));
+        const stats = {
+            total: activeOps.length,
+            alta: activeOps.filter((o) => o.priority === 'alta').length,
+            media: activeOps.filter((o) => o.priority === 'media').length,
+            baja: activeOps.filter((o) => o.priority === 'baja').length,
+            novedades: novedades.length,
+            historialTotal: Object.keys(historial).length,
+            excluidas: hiddenCount
+        };
+        const opsWithSaved = activeOps.map((o) => ({
             ...o,
             isSaved: actions.saved.some((s) => s.id === o.id)
         }));
-        const outStats = {
-            ...stats,
-            total: opportunities.length,
-            alta: opportunities.filter((o) => o.priority === 'alta').length,
-            media: opportunities.filter((o) => o.priority === 'media').length,
-            baja: opportunities.filter((o) => o.priority === 'baja').length,
-            ocultas: 0
-        };
-        lastResult = { profileId: effectiveProfileId, runAt: now, stats: outStats, opportunities: opsWithSaved };
+        lastResult = { profileId: effectiveProfileId, runAt: now, stats, opportunities: opsWithSaved };
         res.setHeader('Cache-Control', 'no-store');
-        res.json({ success: true, profileId: profile.id, profileName: profile.name, ...outStats, opportunities: opsWithSaved });
-        console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades, ${novedades.length} novedades, ${actions.saved.length} guardadas`);
+        res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities: opsWithSaved });
+        console.log(`[API] Pipeline OK - ${activeOps.length}/${opportunities.length} activas (${hiddenCount} no-aplica), ${novedades.length} novedades, ${actions.saved.length} guardadas`);
     }
     catch (error) {
         console.error('[API] Pipeline error:', error.message);
@@ -781,12 +776,11 @@ app.post('/api/opportunities/:id/hide', (req, res) => {
     const { id } = req.params;
     const profileId = req.body?.profileId || req.query?.profileId || 'general';
     const visibleIds = req.body?.visibleIds || [];
-    // ELIMINAR del historial.json para siempre
-    delete historial[id];
-    saveHistorial();
-    // Buscar reemplazo del MISMO PERFIL, aleatorio, excluyendo visibles
+    (0, userActions_1.hideOpportunity)(id);
+    const actions = (0, userActions_1.getActions)();
     const allEntries = Object.values(historial);
     const candidates = allEntries.filter((h) => {
+        if (actions.hidden.includes(h.id)) return false;
         if (h.id === id) return false;
         if (visibleIds.includes(h.id)) return false;
         if (!h.profiles || !h.profiles.includes(profileId)) return false;
@@ -796,7 +790,7 @@ app.post('/api/opportunities/:id/hide', (req, res) => {
         ? candidates[Math.floor(Math.random() * candidates.length)]
         : null;
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, message: 'Eliminada', replacement: replacement || null });
+    res.json({ success: true, message: 'No aplica', replacement: replacement || null });
 });
 app.post('/api/opportunities/:id/restore', (req, res) => {
     const { id } = req.params;
