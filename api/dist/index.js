@@ -345,6 +345,14 @@ function authMiddleware(req, res, next) {
     catch (e) { /* token invalido = anonimo */ }
     next();
 }
+// ---- IN-MEMORY EXCLUSIONS (survives Render tmpfs issues) ----
+const hiddenIds = [];
+function getActions() { return { hidden: hiddenIds, saved: [] }; }
+function hideOpportunity(id) { if (!hiddenIds.includes(id)) hiddenIds.push(id); return true; }
+function restoreOpportunity(id) { const i = hiddenIds.indexOf(id); if (i >= 0) hiddenIds.splice(i, 1); return true; }
+// Override userActions module functions
+try { require('./userActions').getActions = getActions; } catch(e){}
+
 app.use(authMiddleware);
 // ---- AUTH ENDPOINTS ----
 app.post('/api/auth/login', (req, res) => {
@@ -465,7 +473,7 @@ app.post('/api/opportunities/run', async (req, res) => {
             const entry = historial[o.id];
             return entry && entry.firstSeen >= hace24h;
         });
-        const actions = (0, userActions_1.getActions)();
+        const actions = getActions();
         const hiddenCount = actions.hidden.length;
         const activeOps = opportunities.filter((o) => !actions.hidden.includes(o.id));
         const stats = {
@@ -768,7 +776,7 @@ app.get('/api/opportunities/stats', (_req, res) => {
 });
 // ---- USER ACTIONS (Hide / Save) ----
 app.get('/api/opportunities/actions', (req, res) => {
-    const actions = (0, userActions_1.getActions)();
+    const actions = getActions();
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, hidden: actions.hidden, saved: actions.saved });
 });
@@ -776,8 +784,8 @@ app.post('/api/opportunities/:id/hide', (req, res) => {
     const { id } = req.params;
     const profileId = req.body?.profileId || req.query?.profileId || 'general';
     const visibleIds = req.body?.visibleIds || [];
-    (0, userActions_1.hideOpportunity)(id);
-    const actions = (0, userActions_1.getActions)();
+    hideOpportunity(id);
+    const actions = getActions();
     const allEntries = Object.values(historial);
     const candidates = allEntries.filter((h) => {
         if (actions.hidden.includes(h.id)) return false;
@@ -802,10 +810,10 @@ app.post('/api/opportunities/hide-batch', (req, res) => {
     const visibleIds = req.body?.visibleIds || [];
     // Ocultar todas
     for (const id of ids) {
-        (0, userActions_1.hideOpportunity)(id);
+        hideOpportunity(id);
     }
     // Buscar reemplazos (uno por cada eliminada)
-    const actions = (0, userActions_1.getActions)();
+    const actions = getActions();
     const allEntries = Object.values(historial);
     const replacements = [];
     for (const id of ids) {
@@ -826,7 +834,7 @@ app.post('/api/opportunities/hide-batch', (req, res) => {
 });
 app.post('/api/opportunities/:id/restore', (req, res) => {
     const { id } = req.params;
-    (0, userActions_1.restoreOpportunity)(id);
+    restoreOpportunity(id);
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, message: 'Restaurada' });
 });
