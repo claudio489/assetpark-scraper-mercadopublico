@@ -308,9 +308,20 @@ tr:hover{background:rgba(0,212,255,.06)}
 <div class="err" id="err"></div>
 <div class="success" id="succ"></div>
 
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#a0c4d4;font-size:.85rem">
+<input type="checkbox" id="selAll" onchange="toggleSelectAll(this)" style="width:16px;height:16px;accent-color:#00d4ff">
+<strong>Seleccionar todas</strong>
+</label>
+<span id="selCount" style="color:#6b8fa3;font-size:.8rem;display:none"></span>
+<button class="btn-action btn-na" id="delBatchBtn" onclick="hideBatch()" style="display:none;font-size:.8rem;padding:6px 12px">
+&#128465; Eliminar <span id="delCount">0</span>
+</button>
+</div>
 <div class="table-wrap">
 <table>
 <thead><tr>
+<th style="width:30px"><input type="checkbox" id="selAllHeader" onchange="toggleSelectAll(this)" style="width:16px;height:16px;accent-color:#00d4ff"></th>
 <th style="width:60px">Score</th><th>Titulo</th><th>Entidad</th><th>Region</th><th style="width:110px">Monto</th>
 <th>Codigo</th><th style="width:90px">Negocio</th><th style="width:90px">Recom.</th><th style="width:100px">Cierre</th><th style="width:50px"></th>
 </tr></thead>
@@ -427,6 +438,7 @@ if(dl<=7&&dl>0)badges+='<span class="badge badge-VENCER">VENCE</span>';
 const url=o.url||'#';
 const isSaved=o.isSaved||false;
 h+='<tr data-id="'+escJS(o.id||'')+'">';
+h+='<td><input type="checkbox" class="sel-row" value="'+escJS(o.id||'')+'" onchange="updateSelCount()" style="width:16px;height:16px;accent-color:#00d4ff"></td>';
 h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><span class="score '+scClass+'">'+sc+'</span></td>';
 h+='<td><a class="a-link" href="'+escURL(url)+'" target="_blank" style="font-weight:700;font-size:.9rem;color:#e2e8f0" onclick="event.stopPropagation()">'+escHTML(o.title||'')+'</a>'+badges+'</td>';
 h+='<td onclick="openMod(\''+escJS(o.id||'')+'\')" style="cursor:pointer"><span class="entidad">'+escHTML(o.entity||'')+'</span></td>';
@@ -444,6 +456,7 @@ h+='</td>';
 h+='</tr>';
 }
 $('tbl').innerHTML=h;
+updateSelCount();
 }catch(e){console.error('Tbl error:',e);}
 }
 
@@ -625,6 +638,43 @@ renderDash();renderTbl();
 $('succ').textContent='NO APLICA - No hay mas licitaciones disponibles con los filtros actuales';
 $('succ').classList.add('show');
 setTimeout(()=>$('succ').classList.remove('show'),5000);
+}
+}catch(e){console.error(e);}
+}
+function toggleSelectAll(chk){
+const rows=document.querySelectorAll('.sel-row');
+for(const c of rows)c.checked=chk.checked;
+updateSelCount();
+}
+function updateSelCount(){
+const sel=document.querySelectorAll('.sel-row:checked');
+const n=sel.length;
+$('selCount').textContent=n+' seleccionadas';
+$('selCount').style.display=n>0?'inline':'none';
+$('delBatchBtn').style.display=n>0?'inline-block':'none';
+$('delCount').textContent=n;
+}
+async function hideBatch(){
+const sel=document.querySelectorAll('.sel-row:checked');
+const ids=Array.from(sel).map(c=>c.value);
+if(ids.length===0)return;
+if(!confirm('Eliminar '+ids.length+' licitaciones seleccionadas?'))return;
+try{
+const visibleIds=st.filt.map(o=>o.id);
+const r=await fetch('/api/opportunities/hide-batch',{method:'POST',headers:authHeaders(),body:JSON.stringify({ids,profileId:st.pid,visibleIds})});
+const d=await r.json();
+if(d.success){
+// Quitar las eliminadas, agregar reemplazos
+st.filt=st.filt.filter(o=>!ids.includes(o.id));
+if(d.replacements&&d.replacements.length>0){
+for(const rep of d.replacements){
+if(!st.filt.find(o=>o.id===rep.id))st.filt.push(rep);
+}
+}
+renderDash();renderTbl();
+$('err').textContent=ids.length+' eliminadas - '+d.replacements.length+' nuevas cargadas';
+$('err').classList.add('show');
+setTimeout(()=>$('err').classList.remove('show'),3000);
 }
 }catch(e){console.error(e);}
 }

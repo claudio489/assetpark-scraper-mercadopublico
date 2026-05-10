@@ -792,6 +792,38 @@ app.post('/api/opportunities/:id/hide', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, message: 'No aplica', replacement: replacement || null });
 });
+app.post('/api/opportunities/hide-batch', (req, res) => {
+    const { ids, profileId } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+        res.status(400).json({ success: false, error: 'ids requerido' });
+        return;
+    }
+    const effectiveProfileId = profileId || 'general';
+    const visibleIds = req.body?.visibleIds || [];
+    // Ocultar todas
+    for (const id of ids) {
+        (0, userActions_1.hideOpportunity)(id);
+    }
+    // Buscar reemplazos (uno por cada eliminada)
+    const actions = (0, userActions_1.getActions)();
+    const allEntries = Object.values(historial);
+    const replacements = [];
+    for (const id of ids) {
+        const candidates = allEntries.filter((h) => {
+            if (actions.hidden.includes(h.id)) return false;
+            if (h.id === id) return false;
+            if (visibleIds.includes(h.id)) return false;
+            if (replacements.some(r => r.id === h.id)) return false;
+            if (!h.profiles || !h.profiles.includes(effectiveProfileId)) return false;
+            return true;
+        });
+        if (candidates.length > 0) {
+            replacements.push(candidates[Math.floor(Math.random() * candidates.length)]);
+        }
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, message: ids.length + ' licitaciones ocultadas', replacements });
+});
 app.post('/api/opportunities/:id/restore', (req, res) => {
     const { id } = req.params;
     (0, userActions_1.restoreOpportunity)(id);

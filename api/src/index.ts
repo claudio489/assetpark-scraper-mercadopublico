@@ -546,34 +546,29 @@ app.post('/api/opportunities/run', async (req: Request, res: Response) => {
       return entry && entry.firstSeen >= hace24h;
     });
 
+    const actions = getActions();
+    const hiddenCount = actions.hidden.length;
+    const activeOps = opportunities.filter((o: any) => !actions.hidden.includes(o.id));
     const stats = {
-      total: opportunities.length,
-      alta: opportunities.filter((o: any) => o.priority === 'alta').length,
-      media: opportunities.filter((o: any) => o.priority === 'media').length,
-      baja: opportunities.filter((o: any) => o.priority === 'baja').length,
+      total: activeOps.length,
+      alta: activeOps.filter((o: any) => o.priority === 'alta').length,
+      media: activeOps.filter((o: any) => o.priority === 'media').length,
+      baja: activeOps.filter((o: any) => o.priority === 'baja').length,
       novedades: novedades.length,
-      historialTotal: Object.keys(historial).length
+      historialTotal: Object.keys(historial).length,
+      excluidas: hiddenCount
     };
 
-    const actions = getActions();
-    const opsWithSaved = opportunities.map((o: any) => ({
+    const opsWithSaved = activeOps.map((o: any) => ({
       ...o,
       isSaved: actions.saved.some((s: any) => s.id === o.id)
     }));
-    const outStats = {
-      ...stats,
-      total: opportunities.length,
-      alta: opportunities.filter((o: any) => o.priority === 'alta').length,
-      media: opportunities.filter((o: any) => o.priority === 'media').length,
-      baja: opportunities.filter((o: any) => o.priority === 'baja').length,
-      ocultas: 0
-    };
 
-    lastResult = { profileId: effectiveProfileId, runAt: now, stats: outStats, opportunities: opsWithSaved };
+    lastResult = { profileId: effectiveProfileId, runAt: now, stats, opportunities: opsWithSaved };
 
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, profileId: profile.id, profileName: profile.name, ...outStats, opportunities: opsWithSaved });
-    console.log(`[API] Pipeline OK - ${opportunities.length} oportunidades, ${novedades.length} novedades, ${actions.saved.length} guardadas`);
+    res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities: opsWithSaved });
+    console.log(`[API] Pipeline OK - ${activeOps.length}/${opportunities.length} activas (${hiddenCount} no-aplica), ${novedades.length} novedades, ${actions.saved.length} guardadas`);
 
   } catch (error) {
     console.error('[API] Pipeline error:', (error as Error).message);
@@ -884,12 +879,11 @@ app.post('/api/opportunities/:id/hide', (req: Request, res: Response) => {
   const { id } = req.params;
   const profileId = req.body?.profileId || req.query?.profileId || 'general';
   const visibleIds = req.body?.visibleIds || [];
-  // ELIMINAR del historial.json para siempre
-  delete historial[id];
-  saveHistorial();
-  // Buscar reemplazo del MISMO PERFIL, aleatorio
+  hideOpportunity(id);
+  const actions = getActions();
   const allEntries = Object.values(historial);
   const candidates = allEntries.filter((h: any) => {
+    if (actions.hidden.includes(h.id)) return false;
     if (h.id === id) return false;
     if (visibleIds.includes(h.id)) return false;
     if (!h.profiles || !h.profiles.includes(profileId)) return false;
@@ -899,7 +893,38 @@ app.post('/api/opportunities/:id/hide', (req: Request, res: Response) => {
     ? candidates[Math.floor(Math.random() * candidates.length)]
     : null;
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ success: true, message: 'No aplica - oculta', replacement: replacement || null });
+  res.json({ success: true, message: 'No aplica', replacement: replacement || null });
+});
+
+app.post('/api/opportunities/hide-batch', (req: Request, res: Response) => {
+  const { ids, profileId } = req.body || {} as any;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ success: false, error: 'ids requerido' });
+    return;
+  }
+  const effectiveProfileId = profileId || 'general';
+  const visibleIds = req.body?.visibleIds || [];
+  for (const id of ids) {
+    hideOpportunity(id);
+  }
+  const actions = getActions();
+  const allEntries = Object.values(historial);
+  const replacements: any[] = [];
+  for (const id of ids) {
+    const candidates = allEntries.filter((h: any) => {
+      if (actions.hidden.includes(h.id)) return false;
+      if (h.id === id) return false;
+      if (visibleIds.includes(h.id)) return false;
+      if (replacements.some((r: any) => r.id === h.id)) return false;
+      if (!h.profiles || !h.profiles.includes(effectiveProfileId)) return false;
+      return true;
+    });
+    if (candidates.length > 0) {
+      replacements.push(candidates[Math.floor(Math.random() * candidates.length)]);
+    }
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ success: true, message: ids.length + ' licitaciones ocultadas', replacements });
 });
 
 app.post('/api/opportunities/:id/restore', (req: Request, res: Response) => {
