@@ -83,7 +83,7 @@ function saveHistorial() {
 // Cargar al iniciar
 loadHistorial();
 const PROFILES = [
-    { id: 'constructora', name: 'Constructora / Obras Civiles', keywords: ['construccion', 'obra civil', 'obra publica', 'infraestructura', 'edificacion', 'puente', 'camino', 'pavimentacion', 'hormigon', 'asfalto', 'movimiento de tierra', 'demolicion', 'excavacion', 'terraplen', 'estructura', 'tabiqueria', 'terminaciones', 'instalaciones', 'conservacion', 'escuela', 'plaza publica', 'sede comunitaria', 'obra gruesa', 'obra menor', 'reparacion', 'mantencion', 'ampliacion', 'remodelacion', 'climatizacion', 'hvac', 'aire acondicionado', 'calefaccion', 'ventilacion', 'bomba de calor', 'eficiencia energetica', 'inverter', 'refrigeracion', 'calefactor', 'sistema termico', 'ventilacion mecanica', 'sistema hvac', 'montaje industrial', 'estructura metalica', 'silo', 'laboratorio', 'izaje', 'soldadura certificada', 'torque controlado', 'andamio', 'andamio multidireccional', 'estructura gran porte', 'montaje estructural', 'cmpc', 'celulosa', 'industria forestal', 'planta industrial', 'bodega', 'galpon', 'centro distribucion', 'parque industrial', 'caminos'], excluded: ['medico', 'hospital', 'insumos medicos', 'quirurgico', 'material esteril', 'instrumental quirurgico', 'equipamiento medico', 'medicamentos', 'oficina', 'mueble', 'computador', 'impresora', 'papeleria', 'software', 'mobiliario', 'silla oficina', 'escritorio', 'servicio transporte', 'seguro', 'consultoria juridica', 'estudio contable', 'servicio limpieza', 'servicio vigilancia', 'arriendo vehiculo', 'servicio de buffet', 'alimentacion', 'catering', 'buceo', 'submarino', 'deporte acuatico', 'equipo de buceo', 'imprenta', 'impresion offset', 'banner publicitario', 'pendon pvc', 'desarrollo software', 'aplicacion movil', 'ciberseguridad', 'plataforma digital'], regions: ['Maule', 'Biobio', 'Araucania'], minAmount: 100000000, maxAmount: 500000000 },
+    { id: 'constructora', name: 'DYG - Construccion y Obras Civiles', keywords: ['construccion obra civil', 'obra publica', 'infraestructura vial', 'construccion caminos', 'pavimentacion', 'hormigon', 'concreto', 'asfalto', 'movimiento de tierra', 'demolicion', 'excavacion', 'terraplen', 'estructura', 'puente', 'puentes', 'pasarela', 'bacheo', 'recapeo', 'obra gruesa', 'obra menor', 'reparacion', 'mantencion', 'ampliacion', 'remodelacion edificio', 'construccion edificio', 'edificacion', 'escuela', 'plaza publica', 'sede comunitaria', 'centro deportivo', 'estadio', 'cancha', 'polideportivo', 'galpon industrial', 'bodega', 'parque industrial', 'planta industrial', 'estacionamiento', 'caminos vecinales', 'ruta', 'conservacion camino', 'mejoramiento camino', 'red vial', 'caminos publicos', 'acceso camino', 'caminos rurales'], excluded: ['medico', 'hospital', 'insumos medicos', 'quirurgico', 'material esteril', 'instrumental quirurgico', 'equipamiento medico', 'medicamentos', 'climatizacion', 'hvac', 'aire acondicionado', 'calefaccion', 'ventilacion', 'bomba de calor', 'eficiencia energetica', 'inverter', 'refrigeracion', 'calefactor', 'sistema termico', 'ventilacion mecanica', 'sistema hvac', 'oficina', 'mueble', 'computador', 'impresora', 'papeleria', 'software', 'mobiliario', 'silla oficina', 'escritorio', 'servicio transporte', 'seguro', 'consultoria juridica', 'estudio contable', 'servicio limpieza', 'servicio vigilancia', 'arriendo vehiculo', 'servicio de buffet', 'alimentacion', 'catering', 'buceo', 'submarino', 'deporte acuatico', 'equipo de buceo', 'imprenta', 'impresion offset', 'banner publicitario', 'pendon pvc', 'desarrollo software', 'aplicacion movil', 'ciberseguridad', 'plataforma digital'], regions: ['Biobio'], minAmount: 50000000, maxAmount: 1000000000 },
     { id: 'tecnologia', name: 'Tecnologia / Software / TI', keywords: ['software', 'desarrollo software', 'sistema informatico', 'plataforma digital', 'aplicacion movil', 'ciberseguridad', 'hosting cloud', 'data center', 'red de datos', 'telecomunicaciones'], excluded: ['construccion', 'hormigon', 'asfalto', 'medico', 'hospital'] },
     { id: 'salud', name: 'Salud / Insumos Medicos', keywords: ['insumos medicos', 'equipamiento medico', 'medicamentos', 'material de curacion', 'material esteril', 'instrumental quirurgico', 'equipo de rayos x', 'tomografo', 'resonancia magnetica'], excluded: ['oficina', 'papeleria', 'computador', 'mueble', 'limpieza'] },
     { id: 'imprenta', name: 'Imprenta / Grafica / Publicidad', keywords: ['imprenta', 'impresion offset', 'impresion digital', 'pendon pvc', 'banner publicitario', 'gigantografia', 'letrero luminoso', 'rotulacion vehicular', 'troquelado', 'corte laser', 'vinilo de corte', 'serigrafia'], excluded: ['medico', 'hospital', 'insumos medicos', 'quirurgico'] },
@@ -345,14 +345,6 @@ function authMiddleware(req, res, next) {
     catch (e) { /* token invalido = anonimo */ }
     next();
 }
-// ---- IN-MEMORY EXCLUSIONS (survives Render tmpfs issues) ----
-const hiddenIds = [];
-function getActions() { return { hidden: hiddenIds, saved: [] }; }
-function hideOpportunity(id) { if (!hiddenIds.includes(id)) hiddenIds.push(id); return true; }
-function restoreOpportunity(id) { const i = hiddenIds.indexOf(id); if (i >= 0) hiddenIds.splice(i, 1); return true; }
-// Override userActions module functions
-try { require('./userActions').getActions = getActions; } catch(e){}
-
 app.use(authMiddleware);
 // ---- AUTH ENDPOINTS ----
 app.post('/api/auth/login', (req, res) => {
@@ -447,8 +439,9 @@ app.post('/api/opportunities/run', async (req, res) => {
             catch (e) {
                 scored.v5 = { error: 'Decision engine unavailable' };
             }
-            // Guardar en historial persistente
+            // Guardar en historial persistente (preservar excluded)
             const existing = historial[op.id];
+            const wasExcluded = existing?.excluded || false;
             if (!existing) {
                 historial[op.id] = {
                     ...scored,
@@ -464,6 +457,7 @@ app.post('/api/opportunities/run', async (req, res) => {
                 if (!existing.profiles.includes(effectiveProfileId))
                     existing.profiles.push(effectiveProfileId);
             }
+            if (wasExcluded) historial[op.id].excluded = true;
             return scored;
         });
         saveHistorial();
@@ -473,9 +467,10 @@ app.post('/api/opportunities/run', async (req, res) => {
             const entry = historial[o.id];
             return entry && entry.firstSeen >= hace24h;
         });
-        const actions = getActions();
+        const actions = (0, userActions_1.getActions)();
         const hiddenCount = actions.hidden.length;
-        const activeOps = opportunities.filter((o) => !actions.hidden.includes(o.id));
+        const excludedCount = opportunities.filter((o) => historial[o.id]?.excluded).length;
+        const activeOps = opportunities.filter((o) => !historial[o.id]?.excluded);
         const stats = {
             total: activeOps.length,
             alta: activeOps.filter((o) => o.priority === 'alta').length,
@@ -483,7 +478,7 @@ app.post('/api/opportunities/run', async (req, res) => {
             baja: activeOps.filter((o) => o.priority === 'baja').length,
             novedades: novedades.length,
             historialTotal: Object.keys(historial).length,
-            excluidas: hiddenCount
+            excluidas: excludedCount
         };
         const opsWithSaved = activeOps.map((o) => ({
             ...o,
@@ -492,7 +487,7 @@ app.post('/api/opportunities/run', async (req, res) => {
         lastResult = { profileId: effectiveProfileId, runAt: now, stats, opportunities: opsWithSaved };
         res.setHeader('Cache-Control', 'no-store');
         res.json({ success: true, profileId: profile.id, profileName: profile.name, ...stats, opportunities: opsWithSaved });
-        console.log(`[API] Pipeline OK - ${activeOps.length}/${opportunities.length} activas (${hiddenCount} no-aplica), ${novedades.length} novedades, ${actions.saved.length} guardadas`);
+        console.log(`[API] Pipeline OK - ${activeOps.length}/${opportunities.length} activas (${excludedCount} excluidas), ${novedades.length} novedades, ${actions.saved.length} guardadas`);
     }
     catch (error) {
         console.error('[API] Pipeline error:', error.message);
@@ -776,7 +771,7 @@ app.get('/api/opportunities/stats', (_req, res) => {
 });
 // ---- USER ACTIONS (Hide / Save) ----
 app.get('/api/opportunities/actions', (req, res) => {
-    const actions = getActions();
+    const actions = (0, userActions_1.getActions)();
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, hidden: actions.hidden, saved: actions.saved });
 });
@@ -784,11 +779,14 @@ app.post('/api/opportunities/:id/hide', (req, res) => {
     const { id } = req.params;
     const profileId = req.body?.profileId || req.query?.profileId || 'general';
     const visibleIds = req.body?.visibleIds || [];
-    hideOpportunity(id);
-    const actions = getActions();
+    // Marcar como EXCLUIDA en historial.json (persiste)
+    if (historial[id]) {
+        historial[id].excluded = true;
+        saveHistorial();
+    }
     const allEntries = Object.values(historial);
     const candidates = allEntries.filter((h) => {
-        if (actions.hidden.includes(h.id)) return false;
+        if (h.excluded) return false;
         if (h.id === id) return false;
         if (visibleIds.includes(h.id)) return false;
         if (!h.profiles || !h.profiles.includes(profileId)) return false;
@@ -808,17 +806,18 @@ app.post('/api/opportunities/hide-batch', (req, res) => {
     }
     const effectiveProfileId = profileId || 'general';
     const visibleIds = req.body?.visibleIds || [];
-    // Ocultar todas
+    // Marcar todas como EXCLUIDAS en historial.json
     for (const id of ids) {
-        hideOpportunity(id);
+        if (historial[id]) {
+            historial[id].excluded = true;
+        }
     }
-    // Buscar reemplazos (uno por cada eliminada)
-    const actions = getActions();
+    saveHistorial();
     const allEntries = Object.values(historial);
     const replacements = [];
     for (const id of ids) {
         const candidates = allEntries.filter((h) => {
-            if (actions.hidden.includes(h.id)) return false;
+            if (h.excluded) return false;
             if (h.id === id) return false;
             if (visibleIds.includes(h.id)) return false;
             if (replacements.some(r => r.id === h.id)) return false;
@@ -830,11 +829,15 @@ app.post('/api/opportunities/hide-batch', (req, res) => {
         }
     }
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, message: ids.length + ' licitaciones ocultadas', replacements });
+    res.json({ success: true, message: ids.length + ' licitaciones excluidas', replacements });
 });
 app.post('/api/opportunities/:id/restore', (req, res) => {
     const { id } = req.params;
-    restoreOpportunity(id);
+    if (historial[id]) {
+        delete historial[id].excluded;
+        saveHistorial();
+    }
+    (0, userActions_1.restoreOpportunity)(id);
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, message: 'Restaurada' });
 });
@@ -1066,4 +1069,4 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log(`Decision Engine: ${decision_1.EXECUTORS.length} ejecutoras configuradas`);
     console.log(`Historial: ${Object.keys(historial).length} licitaciones persistidas`);
 });
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                              
